@@ -1,37 +1,70 @@
 from abc import ABC, abstractmethod
 import numpy as np
+import enum as Enum
+from enum import Enum
+import copy
+
+class gameState(Enum):
+    ENDED = 'E'
+    DRAW = 'D'
+    ONGOING = 'P'
 
 class Move(ABC):
     name: str = ""
     player: str
+    # legal_moves: list["Move"]
     
     def __init__(self, name: str, player: str) -> None:
         super().__init__()
         self.name = name
         self.player = player
         
-    def __eq__(self, __value: object) -> bool:
-        return super().__eq__(__value)
-        
+    def __eq__(self, __value: "Move") -> bool:
+        return self.name == __value.name and self.player == self.player
+    
+    def __str__(self) -> str:
+        return self.name + self.player
+    
+    def __repr__(self):
+        return str(self)
           
 
 class Board(ABC):
-    state: np.ndarray
+    board: np.ndarray
     legal_moves: list[Move]
+    players: list[str] = ['X', 'O']
+    state: gameState = gameState.ONGOING
+    winner: str = ""
+    curr_player_idx: int = 0
+    curr_player: str = players[0]
+    history: list[Move] = []
     
-    def __init__(self, board_size: tuple) -> None:
+    def __init__(self, board_size: tuple, players: list[str] = ['X', 'O']) -> None:
         super().__init__()
-        self.state = np.ndarray(board_size)
+        self.board = np.full(board_size, fill_value=" ", dtype=str)
+        self.players = copy.deepcopy(players)
         
     def is_legal_move(self, move: Move):
         return move in self.legal_moves
+    
+    def next_player(self):
+        self.curr_player_idx = self.curr_player_idx + 1
+        if self.curr_player_idx == self.players.__len__():
+            self.curr_player_idx = 0
+        self.curr_player = self.players[self.curr_player_idx]
+        
+    def prev_player(self):
+        self.curr_player_idx = self.curr_player_idx - 1
+        if self.curr_player_idx < 0:
+            self.curr_player_idx = self.players.__len__() - 1
+        self.curr_player = self.players[self.curr_player_idx]
     
     @abstractmethod
     def make_move(self, move: Move):
         pass
     
     @abstractmethod
-    def unmake_move(self, move: Move):
+    def unmake_move(self, move: Move = None):
         pass
     
     

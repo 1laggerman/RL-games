@@ -1,31 +1,28 @@
-from connectFourNew import connect4_Move
-# from abc import ABC, abstractmethod
+from connectFour import connect4_Move, connect4_Board, gameState
 
-# move = connect4_Move("Move Name", "Player Name", 3)
-# m2 = connect4_Move("0", "")
-
-# print(m1 == m2)
-
-# class Move(ABC):
-#     name: str = ""
-#     player: str
-    
-#     def __init__(self, name: str, player: str) -> None:
-#         super().__init__()
-#         self.name = name
-#         self.player = player
+game = connect4_Board(rows=6, cols=7)
+# while game.state == gameState.ONGOING:
+#     print(game)
+#     m = int(input(f"{game.curr_player}'s move: \nlegal moves(column number): {game.legal_moves}\nEnter your move: "))
+#     move = connect4_Move(str(m), game.curr_player, m)
+#     if game.is_legal_move(move):
+#         game.make_move(move)
         
-#     def __eq__(self, other: object) -> bool:
-#         if isinstance(other, Move):
-#             return self.name == other.name and self.player == other.player
-#         return False
 
-# class connect4_Move(Move):    
-#     location: int
-    
-#     def __init__(self, name: str, player: str, loc: int) -> None:
-#         super().__init__(name, player)
-#         self.location = loc
+# print(game)
+# print('Game over!')
+# if game.state == gameState.DRAW:
+#     print('The game ended in a draw!')
+# else:
+#     print(f'{game.winner} WON!')
 
-# Creating an object of connect4_Move
-move = connect4_Move("Move Name", "Player Name", 3)
+from MCTSNode import MCTSNode
+
+node = MCTSNode()
+
+node.simulate(game)
+
+print(game)
+print(node.visits)
+print(node.wins)
+
