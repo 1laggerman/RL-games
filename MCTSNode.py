@@ -49,10 +49,14 @@ class MCTSNode:
             result = 1
         elif board.state == gameState.DRAW:
             result = 0.5
-        self.visits += 1
-        self.wins += result
         
         while num_moves > 0:
             board.unmake_move()
             num_moves -= 1
         return result
+    
+    def backpropagate(self, result: float):
+        self.visits += 1
+        self.wins += result
+        if self.parent:
+            self.parent.backpropagate(1 - result)
