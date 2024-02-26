@@ -4,10 +4,8 @@ import numpy as np
 class connect4_Move(Move):    
     location: int
     
-    def __init__(self, name: str, player: str, loc: int) -> None:
-        if player == "":
-            player = " "
-        super().__init__(name, player)
+    def __init__(self, name: str, loc: int) -> None:
+        super().__init__(name)
         self.location = loc
     
     def __eq__(self, __value: "connect4_Move") -> bool:
@@ -27,27 +25,29 @@ class connect4_Board(Board):
     
     def __init__(self, rows: int, cols: int, players: list[str] = ['X', 'O']) -> None:
         super().__init__((rows, cols), players)
-        self.legal_moves = [connect4_Move(f"{i}", " ", loc=i) for i in range(cols)]
+        self.legal_moves = [connect4_Move(f"{i}", loc=i) for i in range(cols)]
         self.cols_heights = [0 for i in range(cols)]
     
+    def create_move(self, input: str) -> Move:
+        try:
+            loc = int(input)
+            move = connect4_Move(input, loc)
+            if self.is_legal_move(move):
+                return move
+        except:
+            pass
+        return None      
+    
     def make_move(self, move: connect4_Move):
-        temp_player = move.player
-        move.player = " "
-        if move not in self.legal_moves:
-            move.player = self.curr_player
-            print("illegal move")
-            return
-        move.player = self.curr_player
-        
         self.history.append(move)
         
-        self.board[self.cols_heights[move.location], move.location] = move.player
+        self.board[self.cols_heights[move.location], move.location] = self.curr_player
         self.cols_heights[move.location] = self.cols_heights[move.location] + 1
         
         if self.cols_heights[move.location] == self.rows():
-            self.legal_moves.remove(connect4_Move(move.name, "", move.location))
+            self.legal_moves.remove(connect4_Move(move.name, move.location))
             
-        self.check_state(move)
+        self.update_state(move)
         self.next_player()
     
     def unmake_move(self, move: connect4_Move = None):
@@ -55,7 +55,7 @@ class connect4_Board(Board):
             move = self.history.pop()
         self.board[self.cols_heights[move.location] - 1, move.location] = " "
         if self.cols_heights[move.location] == self.rows():
-            self.legal_moves.insert(move.location, connect4_Move(move.name, "", move.location))
+            self.legal_moves.insert(move.location, connect4_Move(move.name, move.location))
         self.cols_heights[move.location] = self.cols_heights[move.location] - 1
         
         self.winner = ""
@@ -84,7 +84,7 @@ class connect4_Board(Board):
     def cols(self):
         return self.board.shape[1]
     
-    def check_state(self, last_move: connect4_Move):
+    def update_state(self, last_move: connect4_Move):
         y = last_move.location
         x = self.cols_heights[last_move.location] - 1
         
@@ -106,13 +106,13 @@ class connect4_Board(Board):
                 count += 1
                 i += 1
 
-            if count >= 4:
+            if count >= 4: # Win detected
                 self.state = gameState.ENDED
                 self.winner = player
-                return player  # Win detected
         
-        if self.legal_moves.__len__() == 0:
+        if self.legal_moves.__len__() == 0: # no more moves
             self.state = gameState.DRAW
 
-        return gameState.ONGOING
+
+        return self.state
         

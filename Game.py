@@ -11,19 +11,16 @@ class gameState(Enum):
 
 class Move(ABC):
     name: str = ""
-    player: str
-    # legal_moves: list["Move"]
     
-    def __init__(self, name: str, player: str) -> None:
+    def __init__(self, name: str) -> None:
         super().__init__()
         self.name = name
-        self.player = player
         
     def __eq__(self, __value: "Move") -> bool:
-        return self.name == __value.name and self.player == self.player
+        return self.name == __value.name
     
     def __str__(self) -> str:
-        return self.name + self.player
+        return self.name
     
     def __repr__(self):
         return str(self)
@@ -58,7 +55,11 @@ class Board(ABC):
         if self.curr_player_idx < 0:
             self.curr_player_idx = self.players.__len__() - 1
         self.curr_player = self.players[self.curr_player_idx]
-    
+        
+    @abstractmethod
+    def create_move(self, input: str) -> Move:
+        pass        
+        
     @abstractmethod
     def make_move(self, move: Move):
         pass
@@ -66,6 +67,12 @@ class Board(ABC):
     @abstractmethod
     def unmake_move(self, move: Move = None):
         pass
+    
+    def __str__(self):
+        return self.board
+    
+    def __repr__(self) -> str:
+        return str(self)
     
     
     
