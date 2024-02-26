@@ -32,11 +32,11 @@ class MCTSNode:
     def select_child_with_epsilon_greedy(self, epsilon: float):
         if random.random() < epsilon:
             return random.choice(self.children)
-        return max(self.children, key=lambda c: c[1].wins / c[1].visits if c[1].visits > 0 else 0)
+        return min(self.children, key=lambda c: c[1].wins / c[1].visits if c[1].visits > 0 else 0)
     
     def select_child_with_utc(self):
         assert self.visits > 0
-        return max(self.children, key=lambda c: (c[1].wins / c[1].visits if c[1].visits > 0 else 0) + math.sqrt(2) * math.sqrt(math.log(self.visits) / 1 + c[1].visits))        
+        return min(self.children, key=lambda c: (c[1].wins / c[1].visits if c[1].visits > 0 else 0) + math.sqrt(2) * math.sqrt(math.log(self.visits) / 1 + c[1].visits))        
             
     def expand(self, board: Board, move: Move = None):
         new_action = move
@@ -78,7 +78,7 @@ class MCTSTree():
         self.board = game_board
         self.root = MCTSNode(copy.deepcopy(game_board.legal_moves), player=game_board.curr_player)
         
-    def calc_best_move(self, max_iter: int = 1000, max_depth = -1, alg: ALGORITHMS = ALGORITHMS.UCT, *alg_params):
+    def calc_best_move(self, max_iter: int = 3000, max_depth = -1, alg: ALGORITHMS = ALGORITHMS.UCT, *alg_params):
         max_d = 0
         for _ in range(max_iter):
             node = self.root
@@ -107,7 +107,7 @@ class MCTSTree():
             
             
     def best(self):
-        return max(self.root.children, key=lambda c: c[1].wins / c[1].visits if c[1].visits > 0 else 0)
+        return min(self.root.children, key=lambda c: c[1].wins / c[1].visits if c[1].visits > 0 else 0)
     
     def move(self, move: Move):
         found = False
@@ -126,6 +126,8 @@ class MCTSTree():
     def run(self, input_players: list[str], alg: ALGORITHMS = ALGORITHMS.UCT, *alg_params):
         while self.board.state == gameState.ONGOING:
             print(self.board)
+            print("engine calculations: ")
+            print("wins: ", self.root.wins, " visits: ", self.root.visits)
             move = None
             if self.board.curr_player in input_players:
                 m = input(f"{self.board.curr_player}'s move: \nlegal moves(column number): {self.board.legal_moves}\nEnter your move: ")
@@ -133,7 +135,6 @@ class MCTSTree():
             else: 
                 self.calc_best_move(max_iter=1000, max_depth=-1, alg=alg, *alg_params)
                 (move, node) = self.best()
-                print("wins: ", node.wins, " visits: ", node.visits)
             if move is not None:
                 self.move(move)
             else:
