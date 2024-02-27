@@ -34,9 +34,30 @@ class MCTSNode:
             return random.choice(self.children)
         return min(self.children, key=lambda c: c[1].wins / c[1].visits if c[1].visits > 0 else 0)
     
-    def select_child_with_utc(self):
-        assert self.visits > 0
-        return min(self.children, key=lambda c: (c[1].wins / c[1].visits if c[1].visits > 0 else 0) + math.sqrt(2) * math.sqrt(math.log(self.visits) / 1 + c[1].visits))        
+    def select_child_with_uct(self):
+        
+        assert self.visits > 0, "Parent node has zero visits."
+        # Exploration parameter
+        C = math.sqrt(2)
+
+        # Calculate UCT score for each child and select the child with the highest score
+        best_score = float('-inf')
+        best_child = None
+        for child in self.children:
+            # exploiting 1 - (wins / visits) because the child node is a different player
+            exploitation = (child[1].visits - child[1].wins) / child[1].visits if child[1].visits > 0 else 0
+            exploration = math.sqrt(math.log(self.visits) / (1 + child[1].visits))
+            uct_score = exploitation + C * exploration
+
+            if uct_score > best_score:
+                best_score = uct_score
+                best_child = child
+
+        return best_child
+    
+    # def select_child_with_uct(self):
+    #     assert self.visits > 0
+    #     return min(self.children, key=lambda c: (c[1].wins / c[1].visits if c[1].visits > 0 else 0) + math.sqrt(2) * math.sqrt(math.log(self.visits) / 1 + c[1].visits))        
             
     def expand(self, board: Board, move: Move = None):
         new_action = move
@@ -78,7 +99,7 @@ class MCTSTree():
         self.board = game_board
         self.root = MCTSNode(copy.deepcopy(game_board.legal_moves), player=game_board.curr_player)
         
-    def calc_best_move(self, max_iter: int = 3000, max_depth = -1, alg: ALGORITHMS = ALGORITHMS.UCT, *alg_params):
+    def calc_best_move(self, max_iter: int = 1000, max_depth = -1, alg: ALGORITHMS = ALGORITHMS.UCT, *alg_params):
         max_d = 0
         for _ in range(max_iter):
             node = self.root
@@ -88,7 +109,7 @@ class MCTSTree():
                 if alg == ALGORITHMS.EPSILON_GREEDY:
                     (move, node) = node.select_child_with_epsilon_greedy(float(alg_params[0]))
                 elif alg == ALGORITHMS.UCT:
-                    (move, node) = node.select_child_with_utc()
+                    (move, node) = node.select_child_with_uct()
                 board.make_move(move)
                 depth += 1
             winner = ""
@@ -107,6 +128,8 @@ class MCTSTree():
             
             
     def best(self):
+        # child node contains its own wins so we take the minimum of their wins.
+        # its equivalent to max(1 - (wins / visits)) as calculated in uct score
         return min(self.root.children, key=lambda c: c[1].wins / c[1].visits if c[1].visits > 0 else 0)
     
     def move(self, move: Move):
@@ -123,18 +146,27 @@ class MCTSTree():
         self.board.make_move(move)
         return
         
-    def run(self, input_players: list[str], alg: ALGORITHMS = ALGORITHMS.UCT, *alg_params):
+    def run(self, input_players: list[str], debug = False, alg: ALGORITHMS = ALGORITHMS.UCT, *alg_params, engine_max_iter: int = 1000, engine_max_depth: int = -1):
         while self.board.state == gameState.ONGOING:
-            print(self.board)
+            print('___________________________')
+            self.calc_best_move(max_iter=engine_max_iter, max_depth=engine_max_depth, alg=alg, *alg_params)
             print("engine calculations: ")
-            print("wins: ", self.root.wins, " visits: ", self.root.visits)
-            move = None
+            if debug:
+                print("all moves:")
+                for move, child in self.root.children:
+                    print(f"move {move} has {child.visits - child.wins} / {child.visits}\n")
+            print(f"this position has {self.root.wins} / {self.root.visits} wins")
+            (move, node) = self.best()
+            print(f"best move is {move} evaluated with {node.visits - node.wins} / {node.visits}")
+            
+            print(self.board)
             if self.board.curr_player in input_players:
+                move = None
                 m = input(f"{self.board.curr_player}'s move: \nlegal moves(column number): {self.board.legal_moves}\nEnter your move: ")
                 move = self.board.create_move(m)
-            else: 
-                self.calc_best_move(max_iter=1000, max_depth=-1, alg=alg, *alg_params)
-                (move, node) = self.best()
+            # else: 
+                # self.calc_best_move(max_iter=1000, max_depth=-1, alg=alg, *alg_params)
+                # (move, node) = self.best()
             if move is not None:
                 self.move(move)
             else:
