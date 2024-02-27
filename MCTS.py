@@ -99,7 +99,7 @@ class MCTSTree():
         self.board = game_board
         self.root = MCTSNode(copy.deepcopy(game_board.legal_moves), player=game_board.curr_player)
         
-    def calc_best_move(self, max_iter: int = 1000, max_depth = -1, alg: ALGORITHMS = ALGORITHMS.UCT, *alg_params):
+    def calc_best_move(self, max_iter: int = 1000, max_depth = -1, alg: ALGORITHMS = ALGORITHMS.UCT, epsilon: float = 0.2):
         max_d = 0
         for _ in range(max_iter):
             node = self.root
@@ -107,7 +107,7 @@ class MCTSTree():
             depth = 0
             while len(node.untried_actions) == 0 and not node.is_leaf:
                 if alg == ALGORITHMS.EPSILON_GREEDY:
-                    (move, node) = node.select_child_with_epsilon_greedy(float(alg_params[0]))
+                    (move, node) = node.select_child_with_epsilon_greedy(float(epsilon))
                 elif alg == ALGORITHMS.UCT:
                     (move, node) = node.select_child_with_uct()
                 board.make_move(move)
@@ -146,10 +146,10 @@ class MCTSTree():
         self.board.make_move(move)
         return
         
-    def run(self, input_players: list[str], debug = False, alg: ALGORITHMS = ALGORITHMS.UCT, *alg_params, engine_max_iter: int = 1000, engine_max_depth: int = -1):
+    def run(self, input_players: list[str], debug = False, alg: ALGORITHMS = ALGORITHMS.UCT, epsilon: float = 0.2, engine_max_iter: int = 1000, engine_max_depth: int = -1):
         while self.board.state == gameState.ONGOING:
             print('___________________________')
-            self.calc_best_move(max_iter=engine_max_iter, max_depth=engine_max_depth, alg=alg, *alg_params)
+            self.calc_best_move(max_iter=engine_max_iter, max_depth=engine_max_depth, alg=alg, epsilon=epsilon)
             print("engine calculations: ")
             if debug:
                 print("all moves:")
