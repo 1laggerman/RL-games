@@ -118,7 +118,7 @@ class MCTSTree():
                     (move, node) = node.expand(board)
                     board.make_move(move)
                     depth += 1
-                winner = node.simulate(copy.deepcopy(board))
+                winner = node.simulate(board)
             else:
                 winner = board.winner
             node.backpropagate(winner)
