@@ -1,5 +1,5 @@
-from connectFour import connect4_Move, connect4_Board, gameState
-from MCTS import MCTSTree
+from connectFour import connect4_Board
+from MCTS import MCTSTree, ALGORITHMS
 
 board = connect4_Board(6, 7)
 game = MCTSTree(board)
