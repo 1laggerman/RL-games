@@ -68,6 +68,10 @@ class Board(ABC):
     def unmake_move(self, move: Move = None):
         pass
     
+    @abstractmethod
+    def update_state(move: Move):
+        pass
+    
     def __str__(self):
         return self.board
     
