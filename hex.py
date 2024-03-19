@@ -1,6 +1,7 @@
 from Game import Board, Move, gameState
 import numpy as np
 import itertools as it
+from collections import deque
 
 class hex_Move(Move):    
     location: tuple[int, int]
@@ -28,10 +29,12 @@ class hex_Move(Move):
     
 class hex_Board(Board):
     legal_moves: list[hex_Move]
+    linked_to_edge: np.ndarray
     
     def __init__(self, size: int, players: list[str] = ['X', 'O']) -> None:
         super().__init__((size, size), players)
         self.legal_moves = [hex_Move(f"({i}, {j})", loc=i) for i, j in it.product(range(size), repeat=2)]
+        self.linked_to_edge = np.zeros((players.__len__(), 2, size, size), dtype=bool)
         
     def create_move(self, input: str) -> Move:
         try:
@@ -58,7 +61,32 @@ class hex_Board(Board):
         # TODO: write
         # check end-game
         # TODO: add matrix to check the connection to the edges of the board as a tuple to both the edges.
-        pass
+        links = self.get_links(move)
+        for link in links:
+            if self.linked_to_edge[self.curr_player_idx, 0, *link.location]:
+                self.linked_to_edge[self.curr_player_idx, 0, *move.location] = True
+            if self.linked_to_edge[self.curr_player_idx, 1, *link.location]:
+                self.linked_to_edge[self.curr_player_idx, 1, *move.location] = True
+        if np.all(self.linked_to_edge[self.curr_player_idx, :, *move.location]):
+            self.state = gameState.ENDED
+            self.winner = self.curr_player
+            return
+            
+        if move.location[self.curr_player_idx] == 0:
+            self.dynamic_BFS(move, edge=0)
+        elif move.location[self.curr_player_idx] == self.board.shape[self.curr_player_idx] - 1:
+            self.dynamic_BFS(move, edge=1)
+        
+
+    def dynamic_BFS(self, root: Move, edge: int):
+        q = deque([root])
+        while q.__len__() > 0:
+            m = q.popleft()
+            for link in self.get_links(m):
+                if self.linked_to_edge[self.curr_player_idx, edge, *link.location] == False:
+                    self.linked_to_edge[self.curr_player_idx, edge, *link.location] = True
+                    q.append(link)
+            
     
     def get_links(self, move: hex_Move) -> list[hex_Move]:
         neighbors = ((1, 1), (0, 1), (1, 0))
@@ -66,10 +94,12 @@ class hex_Board(Board):
         for n in neighbors:
             link = move + n
             if link.location[0] >= 0 and link.location[1] >= 0 and link.location[0] < self.board.shape[1] and link.location[1] < self.board.shape[0]:
-                links.append(move + n)
+                if self.board[move.location] == self.curr_player:
+                    links.append(move + n)
             link = move - n
             if link.location[0] >= 0 and link.location[1] >= 0 and link.location[0] < self.board.shape[1] and link.location[1] < self.board.shape[0]:
-                links.append(move - n)
+                if self.board[move.location] == self.curr_player:
+                    links.append(move - n)
         return links
     
     def unmake_move(self, move: hex_Move = None):
