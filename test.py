@@ -7,23 +7,26 @@ from collections import deque
 
 
 board = hex_Board(5, players=['X', 'O'])
-i = 0
-while board.state == gameState.ONGOING and i < 5:
-    print(board)
-    print(board.legal_moves)
-    m = input(f"enter move: ")
-    move = board.create_move(m)
-    board.make_move(move)
-    print(board.linked_to_edge)
-    i += 1
+game = MCTSTree(board)
+game.run(['X'])
+
+# i = 0
+# while board.state == gameState.ONGOING and i < 5:
+#     print(board)
+#     print(board.legal_moves)
+#     m = input(f"enter move: ")
+#     move = board.create_move(m)
+#     board.make_move(move)
+#     print(board.linked_to_edge)
+#     i += 1
 
 
-while(i > 0):
-    board.unmake_move()
-    print(board)
-    print(board.legal_moves)
-    input("next")
-    i -= 1
+# while(i > 0):
+#     board.unmake_move()
+#     print(board)
+#     print(board.legal_moves)
+#     input("next")
+#     i -= 1
 
 # board = connect4_Board(6, 7)
 # game = MCTSTree(board)

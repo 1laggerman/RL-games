@@ -146,7 +146,7 @@ class MCTSTree():
         self.board.make_move(move)
         return
         
-    def run(self, input_players: list[str], debug = False, alg: ALGORITHMS = ALGORITHMS.UCT, epsilon: float = 0.2, engine_max_iter: int = 1000, engine_max_depth: int = -1):
+    def run(self, input_players: list[str], debug = False, alg: ALGORITHMS = ALGORITHMS.UCT, epsilon: float = 0.2, engine_max_iter: int = 3000, engine_max_depth: int = -1):
         while self.board.state == gameState.ONGOING:
             print('___________________________')
             self.calc_best_move(max_iter=engine_max_iter, max_depth=engine_max_depth, alg=alg, epsilon=epsilon)
