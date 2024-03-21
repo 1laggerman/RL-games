@@ -48,7 +48,7 @@ class hex_Board(Board):
     def make_move(self, move: hex_Move):
         self.history.append(move)
         
-        self.board[move.location[0], move.location[1]] = self.curr_player
+        self.board[*move.location] = self.curr_player
         
         # update legal moves
         self.legal_moves.remove(move)
@@ -82,11 +82,6 @@ class hex_Board(Board):
             if edge == True:
                 self.dynamic_BFS(move, i)
         
-        # if move.location[self.curr_player_idx] == 0:
-        #     self.dynamic_BFS(move, edge=0)
-        # elif move.location[self.curr_player_idx] == self.board.shape[self.curr_player_idx] - 1:
-        #     self.dynamic_BFS(move, edge=1)
-        
 
     def dynamic_BFS(self, root: Move, edge: int):
         q = deque([root])
@@ -105,48 +100,61 @@ class hex_Board(Board):
             
     
     def get_links(self, move: hex_Move) -> list[hex_Move]:
-        neighbors = ((1, 1), (0, 1), (1, 0))
+        neighbors = ((-1, 1), (0, 1), (1, 0))
         links = []
         for n in neighbors:
             link = move + n
             if link.location[0] >= 0 and link.location[1] >= 0 and link.location[0] < self.board.shape[1] and link.location[1] < self.board.shape[0]:
-                if self.board[move.location] == self.curr_player:
+                if self.board[link.location] == self.curr_player:
                     links.append(move + n)
             link = move - n
             if link.location[0] >= 0 and link.location[1] >= 0 and link.location[0] < self.board.shape[1] and link.location[1] < self.board.shape[0]:
-                if self.board[move.location] == self.curr_player:
+                if self.board[link.location] == self.curr_player:
                     links.append(move - n)
         return links
     
     def unmake_move(self, move: hex_Move = None):
-        pass
+        if move is None:
+            move = self.history.pop()
+        self.board[*move.location] = " "
+        self.legal_moves.append(move)
+        
+        self.winner = ""
+        self.state = gameState.ONGOING
 
-    def print_board(self):
+    def __str__(self):
+        board_str = ""
         rows, cols = self.board.shape
         indent = 0
-        column_names = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         headings = " "*5+(" "*3).join([str(i) for i in range(cols)])
-        print(headings)
+        # print(headings)
+        board_str += headings + "\n"
         tops = " "*5+(" "*3).join("-"*cols)
-        print(tops)
+        # print(tops)
+        board_str += tops + "\n"
         roof = " "*4+"/ \\"+"_/ \\"*(cols-1)
-        print(roof)
+        # print(roof)
+        board_str += roof + "\n"
         # color_mapping = lambda i : " WB"[i]
         for r in range(rows):
-            row_mid = " "*indent
+            row_mid = " " * (indent - (len(str(r)) - 1)) 
             row_mid += " {} | ".format(r)
             row_mid += " | ".join(self.board[r, :])
             row_mid += " | {} ".format(r)
-            print(row_mid)
+            # print(row_mid)
+            board_str += row_mid + "\n"
             row_bottom = " "*indent
             row_bottom += " "*3+" \\_/"*cols
             if r<rows-1:
                 row_bottom += " \\"
-            print(row_bottom)
+            # print(row_bottom)
+            board_str += row_bottom + "\n"
             # print(str(r).__len__())
             indent += 3 - str(r).__len__()
-        headings = " "*(indent-(3 - str(r).__len__()))+headings
-        print(headings)
+        headings = " "*(indent-(3 - str(r).__len__())) + headings
+        # print(headings)
+        board_str += headings + "\n"
+        return board_str
     
     def __repr__(self) -> str:
         return str(self)

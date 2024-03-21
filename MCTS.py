@@ -165,8 +165,8 @@ class MCTSTree():
                 m = input(f"{self.board.curr_player}'s move: \nlegal moves(column number): {self.board.legal_moves}\nEnter your move: ")
                 move = self.board.create_move(m)
             # else: 
-                # self.calc_best_move(max_iter=1000, max_depth=-1, alg=alg, *alg_params)
-                # (move, node) = self.best()
+            #     self.calc_best_move(max_iter=1000, max_depth=-1, alg=alg, *alg_params)
+            #     (move, node) = self.best()
             if move is not None:
                 self.move(move)
             else:
