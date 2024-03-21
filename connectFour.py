@@ -5,11 +5,11 @@ class connect4_Move(Move):
     location: int
     
     def __init__(self, name: str, loc: int) -> None:
-        super().__init__(name)
+        super(connect4_Move, self).__init__(name)
         self.location = loc
     
     def __eq__(self, __value: "connect4_Move") -> bool:
-        return super().__eq__(__value) and self.location == __value.location
+        return super(connect4_Move, self).__eq__(__value) and self.location == __value.location
     
     def __str__(self) -> str:
         return f"{self.location}"
@@ -24,7 +24,7 @@ class connect4_Board(Board):
     legal_moves: list[connect4_Move]
     
     def __init__(self, rows: int, cols: int, players: list[str] = ['X', 'O']) -> None:
-        super().__init__((rows, cols), players)
+        super(connect4_Board, self).__init__((rows, cols), players)
         self.legal_moves = [connect4_Move(f"{i}", loc=i) for i in range(cols)]
         self.cols_heights = [0 for i in range(cols)]
     
