@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 
 class Node(ABC):
     visits: int = 0
-    wins: int = 0
+    eval: float = 0
     parent: "Node"
     player: str
     children: list[tuple[Move, "Node"]]
@@ -16,7 +16,7 @@ class Node(ABC):
     
     def __init__(self, untried_actions: list[Move], player: str, parent: "Node" = None) -> None:
         self.visits = 0
-        self.wins = 0
+        self.eval = 0
         self.parent = parent
         self.children = list()
         self.player = player
@@ -38,8 +38,15 @@ class Node(ABC):
         pass
     
     @abstractmethod
-    def backpropagate(self, winner: str):
-        pass
+    def backpropagate(self, eval: float):
+        self.visits += 1
+        if self.player == winner:
+            self.wins += 1
+        elif winner == "":
+            self.wins += 0.5
+            
+        if self.parent:
+            self.parent.backpropagate(-eval)
             
 class SearchTree(ABC):
     root: Node
@@ -75,9 +82,7 @@ class SearchTree(ABC):
             
             
     def best(self):
-        # child node contains its own wins so we take the minimum of their wins.
-        # its equivalent to max(1 - (wins / visits)) as calculated in uct score
-        return min(self.root.children, key=lambda c: c[1].wins / c[1].visits if c[1].visits > 0 else 0)
+        return max(self.root.children, key=lambda c: c[1].visits if c[1].visits > 0 else 0)
     
     def move(self, move: Move):
         found = False
@@ -101,10 +106,10 @@ class SearchTree(ABC):
             if debug:
                 print("all moves:")
                 for move, child in self.root.children:
-                    print(f"move {move} has {child.visits - child.wins} / {child.visits}\n")
-            print(f"this position has {self.root.wins} / {self.root.visits} wins")
+                    print(f"move {move} has {child.eval}, with {child.visits} visits\n")
+            print(f"this position has {self.root.eval} eval")
             (move, node) = self.best()
-            print(f"best move is {move} evaluated with {node.visits - node.wins} / {node.visits}")
+            print(f"best move is {move} evaluated with {node.eval}")
             
             print(self.board)
             if self.board.curr_player in input_players:
