@@ -1,14 +1,31 @@
 from hex import hex_Board, hex_Move
 from connectFour import connect4_Board, connect4_Move
 from Game import gameState
+from MCTS_UCT import MCTS_uct_Tree
+# from Tree import SearchTree
 from MCTS import MCTSTree, ALGORITHMS
 import numpy as np
 from collections import deque
 
+# from MCTS_test import MCTSTree
+
 
 board = hex_Board(5, players=['X', 'O'])
-game = MCTSTree(board)
-game.run(['X'])
+
+# game = MCTSTree(board)
+# game.run(['X'], engine_max_iter=1000)
+
+# game = MCTS_uct_Tree(board)
+# game.run(['X'], engine_max_iter=1000, debug=True)
+
+
+
+
+
+
+
+
+
 
 # i = 0
 # while board.state == gameState.ONGOING and i < 5:

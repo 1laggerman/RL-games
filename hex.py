@@ -57,9 +57,6 @@ class hex_Board(Board):
         self.next_player()
     
     def update_state(self, move: hex_Move):
-        # TODO: write
-        # check end-game
-        # TODO: add matrix to check the connection to the edges of the board as a tuple to both the edges.
         links = self.get_links(move)
         for link in links:
             if self.linked_to_edge[self.curr_player_idx, 0, *link.location]:

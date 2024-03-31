@@ -36,17 +36,14 @@ class Node(ABC):
     @abstractmethod
     def expand(self, board: Board, move: Move = None):
         pass
-    
-    @abstractmethod
+        
     def backpropagate(self, eval: float):
         self.visits += 1
-        if self.player == winner:
-            self.wins += 1
-        elif winner == "":
-            self.wins += 0.5
-            
+        
+        self.eval += eval
+        
         if self.parent:
-            self.parent.backpropagate(-eval)
+            self.parent.backpropagate(1-eval)
             
 class SearchTree(ABC):
     root: Node
@@ -54,7 +51,7 @@ class SearchTree(ABC):
     
     def __init__(self, game_board: Board) -> None:
         self.board = game_board
-        self.root = Node(copy.deepcopy(game_board.legal_moves), player=game_board.curr_player)
+        # self.root = Node(copy.deepcopy(game_board.legal_moves), player=game_board.curr_player)
         
     def calc_best_move(self, max_iter: int = 1000, max_depth = -1):
         max_d = 0
@@ -66,23 +63,23 @@ class SearchTree(ABC):
                 (move, node) = node.select_child()
                 board.make_move(move)
                 depth += 1
+            
             ev = 0
             if not node.is_leaf:
                 if max_depth <= 1 or depth + 1 < max_depth:
                     (move, node) = node.expand(board)
                     board.make_move(move)
                     depth += 1
-                ev = node.evaluate(board)
-            else:
-                ev = board.winner
+            ev = node.evaluate(board)
+            
             node.backpropagate(ev)
             if depth > max_d:
                 max_d = depth
         print("reached depth: ", depth)
             
-            
+    @abstractmethod       
     def best(self):
-        return max(self.root.children, key=lambda c: c[1].visits if c[1].visits > 0 else 0)
+        pass
     
     def move(self, move: Move):
         found = False
@@ -98,7 +95,7 @@ class SearchTree(ABC):
         self.board.make_move(move)
         return
         
-    def run(self, input_players: list[str], debug = False, engine_max_iter: int = 3000, engine_max_depth: int = -1):
+    def run(self, input_players: list[str], debug = False, engine_max_iter: int = 1000, engine_max_depth: int = -1):
         while self.board.state == gameState.ONGOING:
             print('___________________________')
             self.calc_best_move(max_iter=engine_max_iter, max_depth=engine_max_depth)
