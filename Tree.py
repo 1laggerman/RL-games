@@ -53,6 +53,10 @@ class SearchTree(ABC):
         self.board = game_board
         # self.root = Node(copy.deepcopy(game_board.legal_moves), player=game_board.curr_player)
         
+    @abstractmethod       
+    def best(self):
+        pass
+        
     def calc_best_move(self, max_iter: int = 1000, max_depth = -1):
         max_d = 0
         for _ in range(max_iter):
@@ -76,10 +80,6 @@ class SearchTree(ABC):
             if depth > max_d:
                 max_d = depth
         print("reached depth: ", depth)
-            
-    @abstractmethod       
-    def best(self):
-        pass
     
     def move(self, move: Move):
         found = False

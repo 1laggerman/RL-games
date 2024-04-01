@@ -1,29 +1,37 @@
 from Game import Move, Board, gameState
 from Tree import Node, SearchTree
 import math
-import copy
+from copy import deepcopy
+import numpy as np
 
 import torch
 
+torch.manual_seed(0)
+
 class value_head(torch.nn.Module):
-    def __init__(self, in_features) -> None:
+    def __init__(self, board: Board) -> None:
         super().__init__()
-        self.fc1 = torch.nn.Linear(in_features, 32)
-        self.fc2 = torch.nn.Linear(32, 1)
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        
+        shape = board.encode().shape
+        in_features = 1
+        for size in shape:
+            in_features *= size 
+        self.fc1 = torch.nn.Linear(in_features, 32, device=self.device)
+        self.fc2 = torch.nn.Linear(32, 1, device=self.device)
         
     def forward(self, x: torch.Tensor):
-        in_features = x.size(1) * x.size(2)
-        x = x.view(-1, in_features)
+        x = x.flatten()
         x = torch.nn.functional.relu(self.fc1(x))
-        x = self.fc2(x)
+        x = torch.nn.functional.sigmoid(self.fc2(x))
         return x
 
 
 class MCTS_NN_Node(Node):
     
-    def __init__(self, board_size: int, untried_actions: list[Move], player: str, parent: "MCTS_NN_Node" = None) -> None:
-        super(MCTS_NN_Node, self).__init__(untried_actions=untried_actions, player=player, parent=parent)
-        self.vh = value_head(board_size)
+    def __init__(self, board: Board, parent: "MCTS_NN_Node" = None) -> None:
+        super(MCTS_NN_Node, self).__init__(untried_actions=board.legal_moves, player=board.curr_player, parent=parent)
+        self.vh = value_head(board)
         self.crit = torch.nn.MSELoss()
         self.opt = torch.optim.Adam(self.vh.parameters(), lr=0.1, betas=(0.9, 0.999), weight_decay=0.1)
         
@@ -55,7 +63,7 @@ class MCTS_NN_Node(Node):
             new_action = self.untried_actions.pop()
         
         board.make_move(new_action)
-        new_Node = MCTS_NN_Node(copy.deepcopy(board.legal_moves), board.curr_player, self)
+        new_Node = MCTS_NN_Node(board, parent=self)
         if board.state == gameState.ENDED or board.state == gameState.DRAW:
             new_Node.is_leaf = True
         board.unmake_move()
@@ -64,13 +72,35 @@ class MCTS_NN_Node(Node):
         return new_child
         
     def evaluate(self, board: Board):
-        return self.vh.forward(torch.Tensor(board.board))
+        return self.vh.forward(torch.Tensor(board.encode()).unsqueeze(0).to(self.vh.device))
     
 class MCTS_NN_Tree(SearchTree):
     
     def __init__(self, game_board: Board) -> None:
         super(MCTS_NN_Tree, self).__init__(game_board)
-        self.root = MCTS_NN_Node(copy.deepcopy(game_board.legal_moves), player=game_board.curr_player, board_size=game_board.board.size)
+        self.root = MCTS_NN_Node(board=game_board)
         
     def best(self):
         return min(self.root.children, key=lambda c: c[1].eval / c[1].visits if c[1].visits > 0 else 0)
+    
+    def train(self, epochs: int, num_searches: int = 1000, tree_max_depth: int = -1):
+        for i in epochs:
+            board = deepcopy(self.board)
+            while self.board.state == gameState.ONGOING:
+                self.calc_best_move(max_iter=num_searches, max_depth=tree_max_depth)
+                move, child = self.best()
+                    
+                if move is not None:
+                    self.move(move)
+                else:
+                    print("ERROR")
+                    return
+                    
+            res = 0
+            if self.board.state == gameState.DRAW:
+                res = 0.5
+            elif self.board.winner == self.board.curr_player:
+                res = 1
+            
+                 
+                

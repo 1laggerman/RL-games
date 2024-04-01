@@ -72,6 +72,9 @@ class Board(ABC):
     def update_state(move: Move):
         pass
     
+    def encode(self) -> np.ndarray:
+        pass
+    
     def __str__(self):
         return self.board
     

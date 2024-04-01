@@ -118,6 +118,10 @@ class hex_Board(Board):
         
         self.winner = ""
         self.state = gameState.ONGOING
+        
+    def encode(self):
+        enc: np.ndarray = np.stack([self.board == player for player in self.players] + [self.board == ' '])
+        return enc.astype(np.float32)
 
     def __str__(self):
         board_str = ""
