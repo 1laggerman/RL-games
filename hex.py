@@ -113,8 +113,10 @@ class hex_Board(Board):
     def unmake_move(self, move: hex_Move = None):
         if move is None:
             move = self.history.pop()
-        self.board[*move.location] = " "
+        self.board[*move.location] = str(' ')
         self.legal_moves.append(move)
+        
+        self.prev_player()
         
         self.winner = ""
         self.state = gameState.ONGOING

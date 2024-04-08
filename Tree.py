@@ -3,6 +3,7 @@ from enum import Enum
 import random
 import math
 import copy
+from hex import hex_Move
 from abc import ABC, abstractmethod
 
 class Node(ABC):
@@ -40,7 +41,7 @@ class Node(ABC):
     def backpropagate(self, eval: float):
         self.visits += 1
         
-        self.eval += eval
+        self.tree_eval += eval
         
         if self.parent:
             self.parent.backpropagate(1-eval)
@@ -54,7 +55,7 @@ class SearchTree(ABC):
         # self.root = Node(copy.deepcopy(game_board.legal_moves), player=game_board.curr_player)
         
     @abstractmethod       
-    def best(self):
+    def best(self) -> tuple[Move, Node]:
         pass
         
     def calc_best_move(self, max_iter: int = 1000, max_depth = -1):
@@ -79,7 +80,8 @@ class SearchTree(ABC):
             node.backpropagate(ev)
             if depth > max_d:
                 max_d = depth
-        print("reached depth: ", depth)
+            for i in range(depth):
+                board.unmake_move()
     
     def move(self, move: Move):
         found = False
@@ -104,7 +106,7 @@ class SearchTree(ABC):
                 print("all moves:")
                 for move, child in self.root.children:
                     print(f"move {move} has {child.eval}, with {child.visits} visits\n")
-            print(f"this position has {self.root.eval} eval")
+            print(f"this position has {self.root.eval} eval, {self.root.tree_eval} tree eval")
             (move, node) = self.best()
             print(f"best move is {move} evaluated with {node.eval}")
             
