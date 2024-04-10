@@ -122,8 +122,13 @@ class hex_Board(Board):
         self.state = gameState.ONGOING
         
     def encode(self):
-        enc: np.ndarray = np.stack([self.board == player for player in self.players] + [self.board == ' '])
+        player_states = np.array([self.board == player for player in self.players])
+        empty_state = self.board == ' '
+        enc: np.ndarray = np.concatenate([player_states, empty_state.reshape((1, *empty_state.shape))])
         return enc.astype(np.float32)
+    
+    # TODO: rotate board
+    # TODO: rotate move
 
     def __str__(self):
         board_str = ""

@@ -6,27 +6,80 @@ from copy import deepcopy
 import numpy as np
 
 import torch
+import matplotlib.pyplot as plt
 
 torch.manual_seed(0)
 
 class value_head(torch.nn.Module):
-    def __init__(self, board: Board) -> None:
+    def __init__(self, board: Board, num_resblocks: int, num_hidden: int) -> None:
         super().__init__()
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         
-        shape = board.encode().shape
-        in_features = 1
-        for size in shape:
-            in_features *= size 
-        self.fc1 = torch.nn.Linear(in_features, 32, device=self.device)
-        self.fc2 = torch.nn.Linear(32, 1, device=self.device)
+        self.start_block = torch.nn.Sequential(
+            torch.nn.Conv2d(3, num_hidden, kernel_size=3, padding=1, device=self.device),
+            torch.nn.BatchNorm2d(num_hidden, device=self.device),
+            torch.nn.Conv2d(3, num_hidden, kernel_size=3, padding=1, device=self.device),
+            torch.nn.ReLU()
+        )
+        
+        self.backBone = torch.nn.ModuleList([ResBlock(num_hidden) for _ in range(num_resblocks)])
+        
+        self.policy_head = torch.nn.Sequential(
+            torch.nn.Conv2d(num_hidden, 32, kernel_size=3, padding=1, device=self.device),
+            torch.nn.BatchNorm2d(32, device=self.device),
+            torch.nn.ReLU(),
+            torch.nn.Flatten(),
+            torch.nn.Linear(32 * board.board.shape[0] * board.board.shape[1], len(board.legal_moves), device=self.device), # test this
+        )
+        
+        self.value_head = torch.nn.Sequential(
+            torch.nn.Conv2d(num_hidden, 3, kernel_size=3, padding=1, device=self.device),
+            torch.nn.BatchNorm2d(3, device=self.device),
+            torch.nn.ReLU(),
+            torch.nn.Flatten(),
+            torch.nn.Linear(3 * board.board.shape[0] * board.board.shape[1], 1, device=self.device),
+            torch.nn.Sigmoid()
+        )
+        
+        # shape = board.encode().shape
+        # in_features = 1
+        # for size in shape:
+        #     in_features *= size 
+        # self.fc1 = torch.nn.Linear(in_features, 32, device=self.device)
+        # self.fc2 = torch.nn.Linear(32, 1, device=self.device)
+        
+    # def forward(self, x: torch.Tensor):
+    #     x = x.view((x.shape[0], -1))
+    #     x = torch.nn.functional.relu(self.fc1(x))
+    #     x = torch.nn.functional.sigmoid(self.fc2(x))
+    #     return x
+    
+    def forward(self, x: torch.Tensor):
+        x = self.start_block(x)
+        for resBlock in self.backBone:
+            x = resBlock(x)
+        # policy = self.policy_head(x)
+        value = self.value_head(x)
+        return value
+
+
+class ResBlock(torch.nn.Module):
+    def __init__(self, num_hidden: int) -> None:
+        super().__init__()
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        self.conv1 = torch.nn.Conv2d(num_hidden, num_hidden, kernel_size=3, padding=1, device=self.device)
+        self.bn1 = torch.nn.BatchNorm2d(num_hidden, device=self.device)
+        self.conv2 = torch.nn.Conv2d(num_hidden, num_hidden, kernel_size=3, padding=1, device=self.device)
+        self.bn2 = torch.nn.BatchNorm2d(num_hidden, device=self.device)
         
     def forward(self, x: torch.Tensor):
-        x = x.flatten()
-        x = torch.nn.functional.relu(self.fc1(x))
-        x = torch.nn.functional.sigmoid(self.fc2(x))
+        residual = x
+        x = torch.nn.functional.relu(self.bn1(self.conv1(x)))
+        x = self.bn2(self.conv2(x))
+        x += residual
+        x = torch.nn.functional.relu(x)
         return x
-
 
 class MCTS_NN_Node(Node):
     
@@ -90,8 +143,8 @@ class MCTS_NN_Tree(SearchTree):
     
     def __init__(self, game_board: Board) -> None:
         super(MCTS_NN_Tree, self).__init__(game_board)
-        # self.vh = value_head(game_board)
-        self.vh = torch.load('value_head.pt')
+        self.vh = value_head(game_board, num_resblocks=10, num_hidden=3)
+        # self.vh = torch.load('value_head.pt')
         self.crit = torch.nn.MSELoss()
         self.opt = torch.optim.Adam(self.vh.parameters(), lr=0.1, betas=(0.9, 0.999), weight_decay=0.1)
         with torch.no_grad():
@@ -103,9 +156,12 @@ class MCTS_NN_Tree(SearchTree):
     def best(self):
         return min(self.root.children, key=lambda c: c[1].eval + c[1].tree_eval / (2 * c[1].visits) if c[1].visits > 0 else 0)
     
-    def train(self, epochs: int, num_searches: int = 1000, tree_max_depth: int = -1):
+    def train(self, self_learn_epochs: int, game_epochs: int, num_searches: int = 1000, tree_max_depth: int = -1):
         board_backup = deepcopy(self.board)
-        for epoch in range(epochs):
+        self.vh = torch.load('value_head.pt')
+        losses = []
+        
+        for i in range(self_learn_epochs):
             self.board = deepcopy(board_backup)
             # print(self.board)
             while self.board.state == gameState.ONGOING:
@@ -126,25 +182,45 @@ class MCTS_NN_Tree(SearchTree):
             elif self.board.winner == self.board.curr_player:
                 res = 1
             
-            pred = child.eval
-            labels = torch.Tensor([res]).to(self.vh.device)
+            # pred = child.eval
+            samples = self.board.encode()
+            samples = samples.reshape((1, *samples.shape))
+            # labels = torch.Tensor([res]).to(self.vh.device)
+            labels = np.array([res])
+            labels = labels.reshape((1, *labels.shape))
             res = 1 - res
             parent = child.parent
             while parent is not None:
                 self.board.unmake_move()
-                pred = torch.cat((pred, parent.eval), dim=0)
-                labels = torch.cat((labels, torch.Tensor([res]).to(self.vh.device)), dim=0)
+                
+                new_sample = self.board.encode()
+                samples = np.concatenate([samples, new_sample.reshape((1, *new_sample.shape))])
+                torch.FloatTensor()
+                new_label = np.array([res])
+                labels = np.concatenate([labels, new_label.reshape((1, *new_label.shape))])
+                # pred = torch.cat((pred, parent.eval), dim=0)
+                # labels = torch.cat((labels, torch.Tensor([res]).to(self.vh.device)), dim=0)
                 
                 res = 1 - res
                 parent = parent.parent
-            self.opt.zero_grad()
-            # pred = 
-            loss = self.crit.forward(pred, labels)
-            loss.backward()
-            self.opt.step()
+            
+            samples = torch.tensor(samples).to(self.vh.device)
+            labels = torch.tensor(labels.astype(np.float32)).to(self.vh.device)
+            
+            for epoch in range(game_epochs):
+                self.opt.zero_grad()
+                pred = self.vh.forward(samples)
+                loss = self.crit.forward(pred, labels)
+                losses.append(loss.item())
+                loss.backward()
+                self.opt.step()
+                
             self.root = MCTS_NN_Node(board=self.board, vh=self.vh)
             self.root.eval = self.root.evaluate(self.board)
             self.root.visits = 1
+        
+        plt.plot(losses)
+        plt.show()
         self.board = deepcopy(board_backup)
         torch.save(self.vh, "value_head.pt")
                 
