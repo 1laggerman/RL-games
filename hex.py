@@ -50,11 +50,11 @@ class hex_Board(Board):
         
         self.board[*move.location] = self.curr_player
         
-        # update legal moves
         self.legal_moves.remove(move)
             
         self.update_state(move)
-        self.next_player()
+        if self.state == gameState.ONGOING:
+            self.next_player()
     
     def update_state(self, move: hex_Move):
         links = self.get_links(move)
@@ -116,7 +116,8 @@ class hex_Board(Board):
         self.board[*move.location] = str(' ')
         self.legal_moves.append(move)
         
-        self.prev_player()
+        if self.state != gameState.ENDED:
+            self.prev_player()
         
         self.winner = ""
         self.state = gameState.ONGOING
@@ -126,9 +127,6 @@ class hex_Board(Board):
         empty_state = self.board == ' '
         enc: np.ndarray = np.concatenate([player_states, empty_state.reshape((1, *empty_state.shape))])
         return enc.astype(np.float32)
-    
-    # TODO: rotate board
-    # TODO: rotate move
 
     def __str__(self):
         board_str = ""

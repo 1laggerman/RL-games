@@ -41,13 +41,15 @@ class MCTS_uct_Node(Node):
         new_Node = MCTS_uct_Node(copy.deepcopy(board.legal_moves), board.curr_player, self)
         if board.state == gameState.ENDED or board.state == gameState.DRAW:
             new_Node.is_leaf = True
+            board.next_player()
+            new_Node.player = board.curr_player
+            board.prev_player()
         board.unmake_move()
         new_child = (new_action, new_Node)
         self.children.append(new_child)
         return new_child
         
     def evaluate(self, board: Board):
-        curr = board.curr_player
         while board.state is not gameState.DRAW and board.state is not gameState.ENDED:
             choices = [i for i in range(board.legal_moves.__len__())]
             move_idx = random.choice(choices)
@@ -55,7 +57,7 @@ class MCTS_uct_Node(Node):
         
         if board.state == gameState.DRAW:
             return 0.5
-        elif board.winner == curr:
+        elif board.winner == self.player:
             return 1
         return 0
     
@@ -67,3 +69,4 @@ class MCTS_uct_Tree(SearchTree):
         
     def best(self):
         return min(self.root.children, key=lambda c: c[1].eval / c[1].visits if c[1].visits > 0 else 0)
+

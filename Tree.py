@@ -35,16 +35,22 @@ class Node(ABC):
         pass
             
     @abstractmethod
-    def expand(self, board: Board, move: Move = None):
+    def expand(self, board: Board, move: Move = None) -> tuple[Move, "Node"]:
         pass
         
     def backpropagate(self, eval: float):
         self.visits += 1
         
-        self.tree_eval += eval
+        self.eval += eval
         
         if self.parent:
             self.parent.backpropagate(1-eval)
+            
+    def __str__(self) -> str:
+        return str(self.eval)
+    
+    def __repr__(self) -> str:
+        return str(self)
             
 class SearchTree(ABC):
     root: Node
@@ -60,6 +66,14 @@ class SearchTree(ABC):
         
     def calc_best_move(self, max_iter: int = 1000, max_depth = -1):
         max_d = 0
+        # while len(self.root.untried_actions) > 0:
+        #     board = copy.deepcopy(self.board)
+        #     (move, node) = self.root.expand(board)
+        #     ev = node.evaluate(board)
+        #     node.backpropagate(ev)
+        #     # node.eval = node.evaluate(self.board)
+        #     max_iter -= 1
+        
         for _ in range(max_iter):
             node = self.root
             board = copy.deepcopy(self.board)
@@ -80,8 +94,6 @@ class SearchTree(ABC):
             node.backpropagate(ev)
             if depth > max_d:
                 max_d = depth
-            for i in range(depth):
-                board.unmake_move()
     
     def move(self, move: Move):
         found = False
@@ -106,7 +118,7 @@ class SearchTree(ABC):
                 print("all moves:")
                 for move, child in self.root.children:
                     print(f"move {move} has {child.eval}, with {child.visits} visits\n")
-            print(f"this position has {self.root.eval} eval, {self.root.tree_eval} tree eval")
+            print(f"this position has {self.root.eval} eval")
             (move, node) = self.best()
             print(f"best move is {move} evaluated with {node.eval}")
             

@@ -119,6 +119,7 @@ class MCTS_NN_Node(Node):
         new_Node = MCTS_NN_Node(board, vh=self.vh, parent=self)
         if board.state == gameState.ENDED or board.state == gameState.DRAW:
             new_Node.is_leaf = True
+        # new_Node.eval = self.evaluate(board)
         board.unmake_move()
         new_child = (new_action, new_Node)
         self.children.append(new_child)
@@ -131,13 +132,13 @@ class MCTS_NN_Node(Node):
         self.visits += 1
         self.eval = eval
         if self.parent:
-            self.parent.bp(1-eval)
+            self.parent.bp(eval)
             
     def bp(self, eval: float):
         self.tree_eval += eval
         self.visits += 1
         if self.parent:
-            self.parent.bp(1-eval)
+            self.parent.bp(eval)
     
 class MCTS_NN_Tree(SearchTree):
     
@@ -154,16 +155,20 @@ class MCTS_NN_Tree(SearchTree):
         self.root.visits = 1
         
     def best(self):
-        return min(self.root.children, key=lambda c: c[1].eval + c[1].tree_eval / (2 * c[1].visits) if c[1].visits > 0 else 0)
+        if self.board.curr_player_idx == 0:
+            return max(self.root.children, key=lambda c: c[1].eval if c[1].visits > 0 else 0)
+        else:
+            return min(self.root.children, key=lambda c: c[1].eval if c[1].visits > 0 else 0)
     
-    def train(self, self_learn_epochs: int, game_epochs: int, num_searches: int = 1000, tree_max_depth: int = -1):
+    def train(self, self_learn_epochs: int, game_epochs: int, num_searches: int = 1000, tree_max_depth: int = -1, new: bool = False):
         board_backup = deepcopy(self.board)
-        self.vh = torch.load('value_head.pt')
+        if not new:
+            self.vh = torch.load('value_head.pt')
         losses = []
         
         for i in range(self_learn_epochs):
             self.board = deepcopy(board_backup)
-            # print(self.board)
+            print(self.board)
             while self.board.state == gameState.ONGOING:
                 self.calc_best_move(max_iter=num_searches, max_depth=tree_max_depth)
                 move, child = self.best()
@@ -172,14 +177,13 @@ class MCTS_NN_Tree(SearchTree):
                     self.move(move)
                 else:
                     print("ERROR")
-                    return
-                # print(self.board)
+                print(self.board)
             print(self.board)
             print('winner is: ', self.board.winner)
             res = 0
             if self.board.state == gameState.DRAW:
                 res = 0.5
-            elif self.board.winner == self.board.curr_player:
+            elif self.board.winner == self.board.players[0]:
                 res = 1
             
             # pred = child.eval
@@ -188,7 +192,7 @@ class MCTS_NN_Tree(SearchTree):
             # labels = torch.Tensor([res]).to(self.vh.device)
             labels = np.array([res])
             labels = labels.reshape((1, *labels.shape))
-            res = 1 - res
+            # res = 1 - res
             parent = child.parent
             while parent is not None:
                 self.board.unmake_move()
@@ -201,7 +205,7 @@ class MCTS_NN_Tree(SearchTree):
                 # pred = torch.cat((pred, parent.eval), dim=0)
                 # labels = torch.cat((labels, torch.Tensor([res]).to(self.vh.device)), dim=0)
                 
-                res = 1 - res
+                # res = 1 - res
                 parent = parent.parent
             
             samples = torch.tensor(samples).to(self.vh.device)

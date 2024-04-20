@@ -93,7 +93,7 @@ class MCTSTree():
         self.board = game_board
         self.root = MCTSNode(copy.deepcopy(game_board.legal_moves), player=game_board.curr_player)
         
-    def calc_best_move(self, max_iter: int = 1000, max_depth = -1, alg: ALGORITHMS = ALGORITHMS.UCT, epsilon: float = 0.2):
+    def calc_best_move(self, max_iter: int = 1000, max_depth = -1):
         max_d = 0
         for _ in range(max_iter):
             node = self.root
@@ -135,10 +135,10 @@ class MCTSTree():
         self.board.make_move(move)
         return
         
-    def run(self, input_players: list[str], debug = False, alg: ALGORITHMS = ALGORITHMS.UCT, epsilon: float = 0.2, engine_max_iter: int = 3000, engine_max_depth: int = -1):
+    def run(self, input_players: list[str], debug = False, engine_max_iter: int = 1000, engine_max_depth: int = -1):
         while self.board.state == gameState.ONGOING:
             print('___________________________')
-            self.calc_best_move(max_iter=engine_max_iter, max_depth=engine_max_depth, alg=alg, epsilon=epsilon)
+            self.calc_best_move(max_iter=engine_max_iter, max_depth=engine_max_depth)
             print("engine calculations: ")
             if debug:
                 print("all moves:")
