@@ -1,4 +1,4 @@
-from Game import Move, Board, gameState
+from Games.Game import Move, Board, gameState
 from enum import Enum
 import random
 import math

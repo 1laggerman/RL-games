@@ -1,5 +1,4 @@
-from abc import ABC
-from Game import Move, Board, gameState
+from Games.Game import Move, Board, gameState
 from Tree import Node, SearchTree
 
 class MCTS_ab_Node(Node):
