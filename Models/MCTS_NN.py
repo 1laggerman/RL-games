@@ -1,16 +1,17 @@
-from Game import Move, Board, gameState
-from Tree import Node, SearchTree
-from hex import hex_Move
+from Games.Game import Move, Board, gameState
+from Models.Tree import Node, SearchTree
 import math
 from copy import deepcopy
 import numpy as np
 
 import torch
 import matplotlib.pyplot as plt
+from torchmetrics.classification import confusion_matrix, accuracy
 
 torch.manual_seed(0)
 
-class value_head(torch.nn.Module):
+
+class resnet(torch.nn.Module):
     def __init__(self, board: Board, num_resblocks: int, num_hidden: int) -> None:
         super().__init__()
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -38,7 +39,6 @@ class value_head(torch.nn.Module):
             torch.nn.ReLU(),
             torch.nn.Flatten(),
             torch.nn.Linear(3 * board.board.shape[0] * board.board.shape[1], 1, device=self.device),
-            torch.nn.Sigmoid()
         )
         
         # shape = board.encode().shape
@@ -99,8 +99,7 @@ class MCTS_NN_Node(Node):
         best_score = float('-inf')
         best_child = None
         for child in self.children:
-            # exploiting 1 - (wins / visits) because the child node is a different player
-            exploitation = (child[1].visits - child[1].eval) / child[1].visits if child[1].visits > 0 else 0
+            exploitation = 1 - child[1].eval
             exploration = math.sqrt(math.log(self.visits) / (1 + child[1].visits))
             uct_score = exploitation + C * exploration
 
@@ -119,35 +118,40 @@ class MCTS_NN_Node(Node):
         new_Node = MCTS_NN_Node(board, vh=self.vh, parent=self)
         if board.state == gameState.ENDED or board.state == gameState.DRAW:
             new_Node.is_leaf = True
-        # new_Node.eval = self.evaluate(board)
+        new_Node.eval = self.evaluate(board)
         board.unmake_move()
         new_child = (new_action, new_Node)
         self.children.append(new_child)
         return new_child
         
     def evaluate(self, board: Board):
-        return self.vh.forward(torch.Tensor(board.encode()).unsqueeze(0).to(self.vh.device))
+        ev = self.vh.forward(torch.Tensor(board.encode()).unsqueeze(0).to(self.vh.device))
+        if self.player == board.players[1]:
+            ev = 1 - ev
+        return ev
     
     def backpropagate(self, eval: float):
         self.visits += 1
-        self.eval = eval
+        if eval > self.eval:
+            self.eval = eval
         if self.parent:
-            self.parent.bp(eval)
+            self.parent.backpropagate(1-eval)
             
-    def bp(self, eval: float):
-        self.tree_eval += eval
-        self.visits += 1
-        if self.parent:
-            self.parent.bp(eval)
+    # def bp(self, eval: float):
+    #     if eval > self.eval:
+    #         self.eval = eval
+    #     self.visits += 1
+    #     if self.parent:
+    #         self.parent.bp(1-eval)
     
 class MCTS_NN_Tree(SearchTree):
     
     def __init__(self, game_board: Board) -> None:
         super(MCTS_NN_Tree, self).__init__(game_board)
-        self.vh = value_head(game_board, num_resblocks=10, num_hidden=3)
+        self.vh = resnet(game_board, num_resblocks=10, num_hidden=3)
         # self.vh = torch.load('value_head.pt')
         self.crit = torch.nn.MSELoss()
-        self.opt = torch.optim.Adam(self.vh.parameters(), lr=0.1, betas=(0.9, 0.999), weight_decay=0.1)
+        self.opt = torch.optim.Adam(self.vh.parameters(), lr=0.01, betas=(0.9, 0.999), weight_decay=0.4)
         with torch.no_grad():
             self.vh.apply(init_weights)
         self.root = MCTS_NN_Node(board=game_board, vh=self.vh)
@@ -159,8 +163,44 @@ class MCTS_NN_Tree(SearchTree):
             return max(self.root.children, key=lambda c: c[1].eval if c[1].visits > 0 else 0)
         else:
             return min(self.root.children, key=lambda c: c[1].eval if c[1].visits > 0 else 0)
+        
+    def static_train(self, epochs: int, X_train: np.ndarray, Y_train: np.ndarray, save_to: str, save_as: str = "net"):
+        losses = []
+        X_train = torch.from_numpy(X_train).float().to(self.vh.device)
+        Y_train = torch.from_numpy(Y_train).float().to(self.vh.device)
+        
+        for epoch in range(epochs):
+            self.opt.zero_grad()
+            pred = self.vh.forward(X_train)
+            loss = self.crit.forward(pred, Y_train)
+            losses.append(loss.item())
+            loss.backward()
+            self.opt.step()
+        
+        plt.plot(losses)
+        plt.show()
+        if save_to[-1] != '/':
+            save_to += '/'
+        torch.save(self.vh, save_to + save_as + '.pt')
+        
+    def static_test(self, x: np.ndarray, y: np.ndarray, load: bool = False):
+        if load:
+            self.vh = torch.load('value_head.pt')
+        
+        x = torch.from_numpy(x).float().to(self.vh.device)
+        y = torch.from_numpy(y).float().to(self.vh.device)
+        with torch.no_grad():
+            pred: torch.Tensor = self.vh.forward(x)
+            loss = self.crit.forward(pred, y)
+            pred = torch.clip(pred, min=0, max=1)
+            print(f'Test Loss: {loss.item()}')
+            cm = confusion_matrix.BinaryConfusionMatrix().to(self.vh.device)
+            acc = accuracy.Accuracy(task="binary").to(self.vh.device)
+            print(acc(pred, y))
+            print(cm(pred, y))
+        
     
-    def train(self, self_learn_epochs: int, game_epochs: int, num_searches: int = 1000, tree_max_depth: int = -1, new: bool = False):
+    def train(self, self_learn_epochs: int, game_epochs: int, num_searches: int = 1000, tree_max_depth: int = -1, decay: float = 0.9, new: bool = False):
         board_backup = deepcopy(self.board)
         if not new:
             self.vh = torch.load('value_head.pt')
@@ -186,26 +226,25 @@ class MCTS_NN_Tree(SearchTree):
             elif self.board.winner == self.board.players[0]:
                 res = 1
             
-            # pred = child.eval
             samples = self.board.encode()
             samples = samples.reshape((1, *samples.shape))
-            # labels = torch.Tensor([res]).to(self.vh.device)
+
             labels = np.array([res])
             labels = labels.reshape((1, *labels.shape))
-            # res = 1 - res
+
             parent = child.parent
             while parent is not None:
                 self.board.unmake_move()
                 
                 new_sample = self.board.encode()
                 samples = np.concatenate([samples, new_sample.reshape((1, *new_sample.shape))])
-                torch.FloatTensor()
+                
+                res = 2 * res - 1
+                res = decay * res
+                res = (res + 1) / 2
                 new_label = np.array([res])
                 labels = np.concatenate([labels, new_label.reshape((1, *new_label.shape))])
-                # pred = torch.cat((pred, parent.eval), dim=0)
-                # labels = torch.cat((labels, torch.Tensor([res]).to(self.vh.device)), dim=0)
                 
-                # res = 1 - res
                 parent = parent.parent
             
             samples = torch.tensor(samples).to(self.vh.device)
@@ -228,8 +267,6 @@ class MCTS_NN_Tree(SearchTree):
         self.board = deepcopy(board_backup)
         torch.save(self.vh, "value_head.pt")
                 
-            
-            
                  
 def init_weights(m):
     if type(m) == torch.nn.Linear:

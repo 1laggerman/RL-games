@@ -1,5 +1,5 @@
-from Game import Move, Board, gameState
-from Tree import Node, SearchTree
+from Games.Game import Move, Board, gameState
+from Models.Tree import Node, SearchTree
 from enum import Enum
 import random
 import math

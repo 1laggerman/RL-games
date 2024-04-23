@@ -1,7 +1,8 @@
-from Game import Board, Move, gameState
+from Games.Game import Board, Move, gameState
 import numpy as np
 import itertools as it
 from collections import deque
+from copy import deepcopy
 
 class hex_Move(Move):    
     location: tuple[int, int]
@@ -123,7 +124,8 @@ class hex_Board(Board):
         self.state = gameState.ONGOING
         
     def encode(self):
-        player_states = np.array([self.board == player for player in self.players])
+        board = deepcopy(self.board)
+        player_states = np.array([board == player for player in self.players])
         empty_state = self.board == ' '
         enc: np.ndarray = np.concatenate([player_states, empty_state.reshape((1, *empty_state.shape))])
         return enc.astype(np.float32)

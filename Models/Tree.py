@@ -1,9 +1,8 @@
-from Game import Move, Board, gameState
+from Games.Game import Move, Board, gameState
 from enum import Enum
 import random
 import math
 import copy
-from hex import hex_Move
 from abc import ABC, abstractmethod
 
 class Node(ABC):
@@ -66,13 +65,14 @@ class SearchTree(ABC):
         
     def calc_best_move(self, max_iter: int = 1000, max_depth = -1):
         max_d = 0
-        # while len(self.root.untried_actions) > 0:
-        #     board = copy.deepcopy(self.board)
-        #     (move, node) = self.root.expand(board)
-        #     ev = node.evaluate(board)
-        #     node.backpropagate(ev)
-        #     # node.eval = node.evaluate(self.board)
-        #     max_iter -= 1
+        while len(self.root.untried_actions) > 0:
+            board = copy.deepcopy(self.board)
+            (move, node) = self.root.expand(board)
+            board.make_move(move)
+            ev = node.evaluate(board)
+            node.backpropagate(ev)
+            # node.eval = node.evaluate(self.board)
+            max_iter -= 1
         
         for _ in range(max_iter):
             node = self.root
@@ -104,7 +104,7 @@ class SearchTree(ABC):
                 break
         
         if not found:
-            (m, node) = self.root.expand(self.board, move)
+            (move, node) = self.root.expand(self.board, move)
             self.root = node
         self.board.make_move(move)
         return
