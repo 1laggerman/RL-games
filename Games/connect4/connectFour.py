@@ -36,7 +36,7 @@ class connect4_Board(Board):
                 return move
         except:
             pass
-        return None      
+        return None
     
     def make_move(self, move: connect4_Move):
         self.history.append(move)

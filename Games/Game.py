@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import enum as Enum
 from enum import Enum
-import copy
+from copy import deepcopy
 
 class gameState(Enum):
     ENDED = 'E'
@@ -30,16 +30,21 @@ class Board(ABC):
     board: np.ndarray
     legal_moves: list[Move]
     players: list[str] = ['X', 'O']
-    state: gameState = gameState.ONGOING
-    winner: str = ""
-    curr_player_idx: int = 0
-    curr_player: str = players[0]
-    history: list[Move] = []
+    state: gameState
+    winner: str
+    curr_player_idx: int
+    curr_player: str
+    history: list[Move]
     
     def __init__(self, board_size: tuple, players: list[str] = ['X', 'O']) -> None:
         super().__init__()
         self.board = np.full(board_size, fill_value=" ", dtype=str)
-        self.players = copy.deepcopy(players)
+        self.players = deepcopy(players)
+        self.state = gameState.ONGOING
+        self.winner = ""
+        self.curr_player_idx = 0
+        self.curr_player = players[0]
+        self.history = []
         
     def is_legal_move(self, move: Move):
         return move in self.legal_moves
@@ -73,13 +78,31 @@ class Board(ABC):
         pass
     
     def encode(self) -> np.ndarray:
-        pass
+        board = deepcopy(self.board)
+        player_states = np.array([board == player for player in self.players])
+        empty_state = self.board == ' '
+        enc: np.ndarray = np.concatenate([player_states, empty_state.reshape((1, *empty_state.shape))])
+        return enc.astype(np.float32)
     
     def __str__(self):
         return self.board
     
     def __repr__(self) -> str:
         return str(self)
+    
+    # def __copy__(self):
+    #     cls = self.__class__
+    #     result = cls.__new__(cls)
+    #     result.__dict__.update(self.__dict__)
+    #     return result
+
+    # def __deepcopy__(self, memo):
+    #     cls = self.__class__
+    #     result = cls.__new__(cls)
+    #     memo[id(self)] = result
+    #     for k, v in self.__dict__.items():
+    #         setattr(result, k, deepcopy(v, memo))
+    #     return result
     
     
     

@@ -2,7 +2,7 @@ from Games.Game import Move, Board, gameState
 from enum import Enum
 import random
 import math
-import copy
+from copy import deepcopy
 from abc import ABC, abstractmethod
 
 class Node(ABC):
@@ -20,7 +20,7 @@ class Node(ABC):
         self.parent = parent
         self.children = list()
         self.player = player
-        self.untried_actions = copy.deepcopy(untried_actions)
+        self.untried_actions = deepcopy(untried_actions)
         self.is_leaf = False
         if len(self.untried_actions) == 0:
             self.is_leaf = True
@@ -66,7 +66,7 @@ class SearchTree(ABC):
     def calc_best_move(self, max_iter: int = 1000, max_depth = -1):
         max_d = 0
         while len(self.root.untried_actions) > 0:
-            board = copy.deepcopy(self.board)
+            board = deepcopy(self.board)
             (move, node) = self.root.expand(board)
             board.make_move(move)
             ev = node.evaluate(board)
@@ -76,7 +76,7 @@ class SearchTree(ABC):
         
         for _ in range(max_iter):
             node = self.root
-            board = copy.deepcopy(self.board)
+            board = deepcopy(self.board)
             depth = 0
             while len(node.untried_actions) == 0 and not node.is_leaf:
                 (move, node) = node.select_child()

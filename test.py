@@ -8,22 +8,27 @@ import numpy as np
 from collections import deque
 
 board = hex_Board(5, players=['X', 'O'])
+# board = connect4_Board(6, 7, players=['X', 'O'])
 # print(board.encode())
 game = MCTS_NN_Tree(board)
 
-X_train = np.load('Games/hex/Data/X_final_MCTS.npy')
-Y_train = np.load('Games/hex/Data/Y_final_MCTS.npy')
-game.static_train(70, X_train, Y_train, save_to="Games/hex/Models", save_as=f"net_1")
+# print(policy[policy > 0])
+# legal = np.where(board.board == ' ', 1, 0).flatten()
+# print(legal)
 
-X_test = np.load('Games/hex/Data/X_final_random.npy')
-Y_test = np.load('Games/hex/Data/Y_final_random.npy')
+# X_train = np.load('Games/hex/Data/X_final_MCTS.npy')
+# Y_train = np.load('Games/hex/Data/Y_final_MCTS.npy')
+# game.static_train(70, X_train, Y_train, save_to="Games/hex/Models", save_as=f"net_1")
 
-game.static_test(X_train, Y_train)
-game.static_test(X_test, Y_test)
+# X_test = np.load('Games/hex/Data/X_final_random.npy')
+# Y_test = np.load('Games/hex/Data/Y_final_random.npy')
+
+# game.static_test(X_train, Y_train)
+# game.static_test(X_test, Y_test)
 
 
-# game.train(self_learn_epochs=25, game_epochs=1, num_searches=100, new=True)
-# game.run(['X'], engine_max_iter=100)
+game.train(self_learn_epochs=25, game_epochs=1, num_searches=20, load=None, save="resnet_1")
+game.run(['X'], engine_max_iter=100)
 
 # game.static_test(X_train, Y_train)
 # game.static_test(X_test, Y_test)
@@ -56,3 +61,6 @@ game.static_test(X_test, Y_test)
 # t = np.concatenate([a, b])
 
 # print(t)
+
+# path = '/'.join(board.__module__.split(".")[0:2]) + '/Models/'
+# print(path)
