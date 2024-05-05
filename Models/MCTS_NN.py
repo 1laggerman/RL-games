@@ -80,6 +80,7 @@ class MCTS_NN_Node(Node):
         self.tree_eval = 0
         self.final_eval = 0
         self.prob = prob
+        self.visits = 1
         with torch.no_grad():
             self.eval, self.policy = self.evaluate(board)
         
@@ -126,35 +127,24 @@ class MCTS_NN_Node(Node):
     #     return best_child
     
     
+    # TODO: make sure node is not leaf by refrence
     def expand(self, board: Board) -> None:
-        for prob in self.policy:
+        for move in self.untried_actions:
+            prob = self.policy[board.map_move(move)]
             if prob > 0:
-                new_action = self.untried_actions.pop()
-                board.make_move(new_action)
-                new_Node = MCTS_NN_Node(board, net=self.net, parent=self, prob=prob)
-                if board.state == gameState.ENDED or board.state == gameState.DRAW:
+                b = deepcopy(board)
+                b.make_move(move)
+                if len(b.legal_moves) == 0:
+                    print("start debugging")
+                new_Node = MCTS_NN_Node(b, net=self.net, parent=self, prob=prob)
+                if b.state == gameState.ENDED or b.state == gameState.DRAW:
                     new_Node.is_leaf = True
-                # new_Node.eval, new_Node.policy = self.evaluate(board)
-                board.unmake_move()
-                new_child = (new_action, new_Node)
+                new_child = (move, new_Node)
                 self.children.append(new_child)
+                
+        self.untried_actions = []
         
         return random.choices(self.children, weights=self.policy[self.policy > 0], k=1)[0]
-         
-    # def expand(self, board: Board, move: Move = None):
-    #     new_action = move
-    #     if move is None or move not in self.untried_actions:
-    #         new_action = self.untried_actions.pop()
-        
-    #     board.make_move(new_action)
-    #     new_Node = MCTS_NN_Node(board, vh=self.net, parent=self)
-    #     if board.state == gameState.ENDED or board.state == gameState.DRAW:
-    #         new_Node.is_leaf = True
-    #     new_Node.eval = self.evaluate(board)
-    #     board.unmake_move()
-    #     new_child = (new_action, new_Node)
-    #     self.children.append(new_child)
-    #     return new_child
         
     def evaluate(self, board: Board) -> tuple[torch.Tensor, torch.Tensor]:
         value, policy = self.net.forward(torch.Tensor(board.encode()).unsqueeze(0).to(self.net.device))
@@ -165,7 +155,9 @@ class MCTS_NN_Node(Node):
         policy = policy.squeeze(0).detach().cpu().numpy()
         legal = np.where(board.board == ' ', 1, 0).flatten()
         policy *= legal
-        policy /= np.sum(policy)
+        s = np.sum(policy)
+        if s > 0:
+            policy /= np.sum(policy)
         return value, policy
     
     def backpropagate(self, eval: float):
@@ -189,13 +181,14 @@ class MCTS_NN_Node(Node):
     #         self.parent.bp(1-eval)
     
 class MCTS_NN_Tree(SearchTree):
+    root: MCTS_NN_Node
     
     def __init__(self, game_board: Board) -> None:
         super(MCTS_NN_Tree, self).__init__(game_board)
         self.net: resnet = resnet(game_board, num_resblocks=10, num_hidden=3)
         self.value_crit = torch.nn.MSELoss()
         self.policy_crit = torch.nn.CrossEntropyLoss()
-        self.opt = torch.optim.Adam(self.net.parameters(), lr=0.01, betas=(0.9, 0.999), weight_decay=0.4)
+        self.opt = torch.optim.Adam(self.net.parameters(), lr=0.001, betas=(0.9, 0.999), weight_decay=0.4)
         with torch.no_grad():
             self.net.apply(init_weights)
         self.root = MCTS_NN_Node(board=game_board, net=self.net, prob=1)
@@ -215,7 +208,7 @@ class MCTS_NN_Tree(SearchTree):
         for epoch in range(epochs):
             self.opt.zero_grad()
             pred = self.net.forward(X_train)
-            loss = self.crit.forward(pred, Y_train)
+            loss = self.value_crit.forward(pred, Y_train)
             losses.append(loss.item())
             loss.backward()
             self.opt.step()
@@ -234,108 +227,145 @@ class MCTS_NN_Tree(SearchTree):
         y = torch.from_numpy(y).float().to(self.net.device)
         with torch.no_grad():
             pred: torch.Tensor = self.net.forward(x)
-            loss = self.crit.forward(pred, y)
+            loss = self.value_crit.forward(pred, y)
             pred = torch.clip(pred, min=0, max=1)
             print(f'Test Loss: {loss.item()}')
             cm = confusion_matrix.BinaryConfusionMatrix().to(self.net.device)
             acc = accuracy.Accuracy(task="binary").to(self.net.device)
             print(acc(pred, y))
             print(cm(pred, y))
+            
+    def self_play(self, num_searches: int = 1000, tree_max_depth: int = -1, decay: float = 0.9) -> tuple[np.ndarray, np.ndarray]:
+        board = deepcopy(self.board)
+        node = deepcopy(self.root)
+        print(board)
+        with torch.no_grad():
+            while board.state == gameState.ONGOING:
+                self.calc_best_move(max_iter=num_searches, max_depth=tree_max_depth, node=node, board=board)
+                probs = np.zeros((len(node.children)))
+                for i, child in enumerate(node.children):
+                    probs[i] = child[1].visits
+                probs /= np.sum(probs)
+                if len(node.children) == 0:
+                    print("ERROR - NO CHILDREN")
+                    self.calc_best_move(max_iter=num_searches, max_depth=tree_max_depth, node=node, board=board)
+                move, node = random.choices(node.children, weights=probs, k=1)[0]
+                # move, child = self.best()
+                
+                if move is not None:
+                    board.make_move(move)
+                    # self.move(move)
+                else:
+                    print("ERROR")
+                print(board)
+        print('winner is: ', board.winner)
+        res = 0
+        if board.state == gameState.DRAW:
+            res = 0.5
+        elif self.board.winner == board.players[0]:
+            res = 1
         
+        samples = board.encode()
+        samples = samples.reshape((1, *samples.shape))
+
+        value_labels = np.array([res])
+        value_labels = value_labels.reshape((1, *value_labels.shape))
+        
+        policy_labels = np.array([node.policy])
+
+        node = node.parent
+        while node is not None:
+            board.unmake_move()
+            
+            new_sample = board.encode()
+            
+            res = 2 * res - 1
+            res = decay * res
+            res = (res + 1) / 2
+            true_value = np.array([res])
+            
+            true_policy = np.zeros(node.policy.shape)
+            for move, child in node.children:
+                true_policy[board.map_move(move)] = child.visits
+            true_policy /= np.sum(true_policy)
+            
+            samples = np.concatenate([samples, new_sample.reshape((1, *new_sample.shape))])
+            value_labels = np.concatenate([value_labels, true_value.reshape((1, *true_value.shape))])
+            policy_labels = np.concatenate([policy_labels, true_policy.reshape((1, *true_policy.shape))])
+            
+            node = node.parent
+        
+        return samples, value_labels, policy_labels
     
     def train(self, self_learn_epochs: int, game_epochs: int, num_searches: int = 1000, tree_max_depth: int = -1, decay: float = 0.9, load: str = None, save: str = None):
         board_backup = deepcopy(self.board)
         path = '/'.join(self.board.__module__.split(".")[0:2]) + '/Models/'
         if load is not None:
-            self.net = torch.load(path + load)
+            self.net: resnet = torch.load(path + load)
         losses = []
+        policy_losses = []
+        value_losees = []
         
         for i in range(self_learn_epochs):
-            self.board = deepcopy(board_backup)
-            print(self.board)
-            with torch.no_grad():
-                while self.board.state == gameState.ONGOING:
-                    self.calc_best_move(max_iter=num_searches, max_depth=tree_max_depth)
-                    move, child = self.best()
-                    
-                    if move is not None:
-                        self.move(move)
-                    else:
-                        print("ERROR")
-                    print(self.board)
-            print(self.board)
-            print('winner is: ', self.board.winner)
-            res = 0
-            if self.board.state == gameState.DRAW:
-                res = 0.5
-            elif self.board.winner == self.board.players[0]:
-                res = 1
-            
-            samples = self.board.encode()
-            samples = samples.reshape((1, *samples.shape))
-
-            value_labels = np.array([res])
-            policy_labels = np.array([])
-            value_labels = value_labels.reshape((1, *value_labels.shape))
-
-            parent = child.parent
-            while parent is not None:
-                self.board.unmake_move()
-                
-                new_sample = self.board.encode()
-                samples = np.concatenate([samples, new_sample.reshape((1, *new_sample.shape))])
-                
-                res = 2 * res - 1
-                res = decay * res
-                res = (res + 1) / 2
-                new_label = np.array([res])
-                value_labels = np.concatenate([value_labels, new_label.reshape((1, *new_label.shape))])
-                
-                parent = parent.parent
+            samples, value_labels, policy_labels = self.self_play(num_searches, tree_max_depth, decay)
             
             samples = torch.tensor(samples).to(self.net.device)
             value_labels = torch.tensor(value_labels.astype(np.float32)).to(self.net.device)
+            policy_labels = torch.tensor(policy_labels.astype(np.float32)).to(self.net.device)
             
             for epoch in range(game_epochs):
                 self.opt.zero_grad()
                 value_pred, policy_pred = self.net.forward(samples)
                 value_loss = self.value_crit.forward(value_pred, value_labels)
                 policy_loss = self.policy_crit.forward(policy_pred, policy_labels)
+                policy_losses.append(policy_loss.item())
+                value_losees.append(value_loss.item())
                 loss = value_loss + policy_loss
                 losses.append(loss.item())
                 loss.backward()
                 self.opt.step()
-                
-            self.root = MCTS_NN_Node(board=self.board, vh=self.net)
-            self.root.eval = self.root.evaluate(self.board)
-            self.root.visits = 1
         
-        plt.plot(losses)
+        # plt.plot(losses)
+        # plt.title('total loss')
+        
+        # plt.plot(policy_losses)
+        # plt.title('policy loss')
+        
+        plt.plot(value_losees)
+        plt.title('value loss')
+        
         plt.show()
         self.board = deepcopy(board_backup)
         torch.save(self.net, path + save)
         
     
-    def calc_best_move(self, max_iter: int = 1000, max_depth = -1):
+    def calc_best_move(self, max_iter: int = 1000, max_depth = -1, node: MCTS_NN_Node = None, board: Board = None):
+        if node is None:
+            node = self.root
+        if board is None:
+            board = self.board
         max_d = 0
         
+        if len(board.legal_moves) <= 2:
+            print("start debuging")
+        
         for _ in range(max_iter):
-            node = self.root
-            board = deepcopy(self.board)
+            running_node = node
+            running_board = deepcopy(board)
             depth = 0
-            while len(node.untried_actions) == 0 and not node.is_leaf:
-                (move, node) = node.select_child()
-                board.make_move(move)
+            while len(running_node.untried_actions) == 0 and not running_node.is_leaf:
+                (move, running_node) = running_node.select_child()
+                running_board.make_move(move)
                 depth += 1
             
             ev = node.eval
-            if not node.is_leaf:
+            if not running_node.is_leaf:
                 if max_depth <= 1 or depth + 1 < max_depth:
-                    (move, node) = node.expand(board)
-                    board.make_move(move)
+                    (move, running_node) = running_node.expand(running_board)
+                    running_board.make_move(move)
                     depth += 1
             
-            node.backpropagate(ev)
+            running_node.backpropagate(ev)
             if depth > max_d:
                 max_d = depth
                 

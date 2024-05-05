@@ -6,11 +6,18 @@ from Models.MCTS_UCT import MCTS_uct_Tree
 from Models.MCTS_NN import MCTS_NN_Node, MCTS_NN_Tree
 import numpy as np
 from collections import deque
+from copy import deepcopy
 
 board = hex_Board(5, players=['X', 'O'])
 # board = connect4_Board(6, 7, players=['X', 'O'])
 # print(board.encode())
 game = MCTS_NN_Tree(board)
+# b2 = deepcopy(board)
+
+# b2.make_move(hex_Move("0 0", (0, 0)))
+
+# print(b2.linked_to_edge)
+# print(board.linked_to_edge)
 
 # print(policy[policy > 0])
 # legal = np.where(board.board == ' ', 1, 0).flatten()
@@ -25,10 +32,8 @@ game = MCTS_NN_Tree(board)
 
 # game.static_test(X_train, Y_train)
 # game.static_test(X_test, Y_test)
-
-
-game.train(self_learn_epochs=25, game_epochs=1, num_searches=20, load=None, save="resnet_1")
-game.run(['X'], engine_max_iter=100)
+game.train(self_learn_epochs=10, game_epochs=1, num_searches=20, load=None, save="test")
+# game.run(['X'], engine_max_iter=100)
 
 # game.static_test(X_train, Y_train)
 # game.static_test(X_test, Y_test)

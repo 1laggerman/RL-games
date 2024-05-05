@@ -6,6 +6,7 @@ from copy import deepcopy
 
 class hex_Move(Move):    
     location: tuple[int, int]
+    changed_links: list[tuple["hex_Move", int]]
     
     def __init__(self, name: str, loc: tuple[int, int]) -> None:
         super(hex_Move, self).__init__(name)
@@ -81,13 +82,14 @@ class hex_Board(Board):
                 self.dynamic_BFS(move, i)
         
 
-    def dynamic_BFS(self, root: Move, edge: int):
+    def dynamic_BFS(self, root: hex_Move, edge: int):
         q = deque([root])
         while q.__len__() > 0:
             m = q.popleft()
             for link in self.get_links(m):
                 if self.linked_to_edge[self.curr_player_idx, edge, *link.location] == False:
                     self.linked_to_edge[self.curr_player_idx, edge, *link.location] = True
+                    # root.changed_links.append(link)
                     
                     if np.all(self.linked_to_edge[self.curr_player_idx, :, *link.location]):
                         self.state = gameState.ENDED
@@ -166,4 +168,8 @@ class hex_Board(Board):
     
     def __repr__(self) -> str:
         return str(self)
+    
+    def map_move(self, move: hex_Move) -> int:
+        x, y = move.location
+        return x * self.board.shape[1] + y
 
