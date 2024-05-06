@@ -32,7 +32,7 @@ game = MCTS_NN_Tree(board)
 
 # game.static_test(X_train, Y_train)
 # game.static_test(X_test, Y_test)
-game.train(self_learn_epochs=10, game_epochs=1, num_searches=20, load=None, save="test")
+game.train(self_learn_epochs=5, game_epochs=1, num_searches=25, load=None, save="example.pt")
 # game.run(['X'], engine_max_iter=100)
 
 # game.static_test(X_train, Y_train)

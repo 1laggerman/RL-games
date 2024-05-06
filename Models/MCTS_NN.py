@@ -238,27 +238,30 @@ class MCTS_NN_Tree(SearchTree):
     def self_play(self, num_searches: int = 1000, tree_max_depth: int = -1, decay: float = 0.9) -> tuple[np.ndarray, np.ndarray]:
         board = deepcopy(self.board)
         node = deepcopy(self.root)
-        print(board)
-        with torch.no_grad():
-            while board.state == gameState.ONGOING:
-                self.calc_best_move(max_iter=num_searches, max_depth=tree_max_depth, node=node, board=board)
-                probs = np.zeros((len(node.children)))
-                for i, child in enumerate(node.children):
-                    probs[i] = child[1].visits
-                probs /= np.sum(probs)
-                if len(node.children) == 0:
-                    print("ERROR - NO CHILDREN")
+        with open('example.txt', 'a') as f:
+            f.write(f'starting game\n{board}\n')
+            print('starting game\n', board)
+            with torch.no_grad():
+                while board.state == gameState.ONGOING:
                     self.calc_best_move(max_iter=num_searches, max_depth=tree_max_depth, node=node, board=board)
-                move, node = random.choices(node.children, weights=probs, k=1)[0]
-                # move, child = self.best()
-                
-                if move is not None:
-                    board.make_move(move)
-                    # self.move(move)
-                else:
-                    print("ERROR")
-                print(board)
-        print('winner is: ', board.winner)
+                    probs = np.zeros((len(node.children)))
+                    for i, child in enumerate(node.children):
+                        probs[i] = child[1].visits
+                    probs /= np.sum(probs)
+                    if len(node.children) == 0:
+                        print("ERROR - NO CHILDREN")
+                        self.calc_best_move(max_iter=num_searches, max_depth=tree_max_depth, node=node, board=board)
+                    move, node = random.choices(node.children, weights=probs, k=1)[0]
+                    # move, child = self.best()
+                    
+                    if move is not None:
+                        board.make_move(move)
+                        # self.move(move)
+                    else:
+                        print("ERROR")
+                    print(board)
+                    f.write(f'{board}\n')
+            print('winner is: ', board.winner)
         res = 0
         if board.state == gameState.DRAW:
             res = 0.5
@@ -358,14 +361,13 @@ class MCTS_NN_Tree(SearchTree):
                 running_board.make_move(move)
                 depth += 1
             
-            ev = node.eval
             if not running_node.is_leaf:
                 if max_depth <= 1 or depth + 1 < max_depth:
                     (move, running_node) = running_node.expand(running_board)
                     running_board.make_move(move)
                     depth += 1
             
-            running_node.backpropagate(ev)
+            running_node.backpropagate(running_node.eval)
             if depth > max_d:
                 max_d = depth
                 
