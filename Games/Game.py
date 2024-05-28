@@ -32,6 +32,7 @@ class Board(ABC):
     legal_moves: list[Move]
     players: list[str] = ['X', 'O']
     state: gameState
+    reward: float
     winner: str
     curr_player_idx: int
     curr_player: str
@@ -64,26 +65,67 @@ class Board(ABC):
         
     @abstractmethod
     def create_move(self, input: str) -> Move:
+        # function to be implemented by a child class, to create a move from input of the specific child class
+        # for example: for a tictactoe_board, this function should read a user input and return a tictactoe_Move object
         pass        
         
+    def move(self, move: Move):
+        self.history.append(move)
+        
+        self.make_move(move)
+        self.update_state(move)
+        
+        self.next_player()
+    
     @abstractmethod
     def make_move(self, move: Move):
+        # this function represents a move being done by a player.
+        # it should update self.board, update self.legal_moves and update self.reward
+        pass
+    
+    def unmove(self, move: Move = None):
+        if move is None:
+            move = self.history.pop()
+            
+        self.unmake_move(move)
+        self.prev_player()
+        
+        self.state = gameState.ONGOING
+        self.winner = ""
+        
+    @abstractmethod
+    def unmake_move(self, move: Move):
+        # this is a reverse function for self.make_move()
+        # it should update self.board and update self.legal_moves
         pass
     
     @abstractmethod
-    def unmake_move(self, move: Move = None):
+    def update_state(self, last_move: Move):
+        # this function checks if the game is over
+        # it should ensure self.state and self.winner are correct for the state of the board
         pass
     
-    @abstractmethod
-    def update_state(move: Move):
-        pass
-    
+    # encodes the board to a numpy array. mainly useful for neural network models
     def encode(self) -> np.ndarray:
         board = deepcopy(self.board)
         player_states = np.array([board == player for player in self.players])
         empty_state = self.board == ' '
         enc: np.ndarray = np.concatenate([player_states, empty_state.reshape((1, *empty_state.shape))])
         return enc.astype(np.float32)
+    
+    def win(self):
+        self.state = gameState.ENDED
+        self.winner = self.curr_player
+        self.reward = 1
+        
+    def draw(self):
+        self.state = gameState.DRAW
+        self.reward = 0
+        
+    def lose(self):
+        self.state = gameState.ENDED
+        self.winner = self.players[self.curr_player_idx - 1]
+        self.reward = -1
     
     def __str__(self):
         return self.board

@@ -1,5 +1,6 @@
 from Games.Game import Move, Board, gameState
 from enum import Enum
+from Engines.player import player
 import random
 import math
 from copy import deepcopy
@@ -51,13 +52,13 @@ class Node(ABC):
     def __repr__(self) -> str:
         return str(self)
             
-class SearchTree():
+class SearchTree(ABC, player):
     root: Node
     board: Board
     
     def __init__(self, game_board: Board) -> None:
         self.board = game_board
-        # self.root = Node(copy.deepcopy(game_board.legal_moves), player=game_board.curr_player)
+        # self.root = Node(game_board.legal_moves, player=game_board.curr_player)
         
     @abstractmethod       
     def best(self) -> tuple[Move, Node]:
