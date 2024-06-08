@@ -1,6 +1,6 @@
-from Games.Game import Move, Board, gameState
-from enum import Enum
-from Engines.player import player
+from package.Games.Game import Move, Board, gameState
+from package.Engines.player import player
+
 import random
 import math
 from copy import deepcopy
@@ -52,7 +52,7 @@ class Node(ABC):
     def __repr__(self) -> str:
         return str(self)
             
-class SearchTree(ABC, player):
+class SearchTree(player, ABC):
     root: Node
     board: Board
     

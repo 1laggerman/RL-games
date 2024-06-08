@@ -1,4 +1,4 @@
-from Games.Game import Board, Move, gameState
+from package.Games.Game import Board, Move, gameState
 import numpy as np
 
 class connect4_Move(Move):    

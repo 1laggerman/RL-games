@@ -1,8 +1,8 @@
-from Engines.player import player
-from Games.Game import Board, Move, gameState
+from package.Engines.player import player
+from package.Games.Game import Board, Move, gameState
 
 
-class humanPlayer(player):
+class terminalPlayer(player):
     
     def __init__(self, game_board: Board, name: str) -> None:
         super().__init__(game_board, name)

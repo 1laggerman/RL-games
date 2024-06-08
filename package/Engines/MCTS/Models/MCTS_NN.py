@@ -1,6 +1,6 @@
-from Games.Game import Move, Board, gameState
-from Models.Tree import Node, SearchTree
-from ML_architecture.resnet import BaseRenset
+from package.Games.Game import Move, Board, gameState
+from package.Engines.MCTS.Treeplayer import Node, SearchTree
+from package.Engines.MCTS.Models.ML_architecture.resnet import BaseRenset
 import math
 import random
 from copy import deepcopy

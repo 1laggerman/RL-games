@@ -1,11 +1,10 @@
+from package.Engines.player import player as p
+
 from abc import ABC, abstractmethod
 import numpy as np
 import enum as Enum
 from enum import Enum
 from copy import deepcopy
-# from Engines.player import player
-import package.Engines.player as player
-# import Engines.player
 
 class gameState(Enum):
     ENDED = 'E'
@@ -33,15 +32,15 @@ class Move(ABC):
 class Board(ABC):
     board: np.ndarray
     legal_moves: list[Move]
-    players: list
+    players: list['player']
     state: gameState
     reward: float
-    winner = None
+    winner: 'player'
     curr_player_idx: int
-    curr_player = None
+    curr_player: 'player'
     history: list[Move]
     
-    def __init__(self, board_size: tuple, players: list = []) -> None:
+    def __init__(self, board_size: tuple, players: list['player'] = []) -> None:
         super().__init__()
         self.state = gameState.ONGOING
         self.history = []
@@ -51,8 +50,8 @@ class Board(ABC):
             players = [player(self, "O")]
         self.players = players
         
-        for player in self.players:
-            player.board = self
+        for p in self.players:
+            p.board = self
             
         self.winner = None
         self.curr_player_idx = 0

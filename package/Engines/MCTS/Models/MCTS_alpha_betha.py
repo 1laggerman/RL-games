@@ -1,5 +1,5 @@
-from Games.Game import Move, Board, gameState
-from Engines.MCTS.Treeplayer import Node, SearchTree
+from package.Games.Game import Move, Board, gameState
+from package.Engines.MCTS.Treeplayer import Node, SearchTree
 
 class MCTS_ab_Node(Node):
     
