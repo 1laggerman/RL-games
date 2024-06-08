@@ -63,6 +63,10 @@ class SearchTree(ABC, player):
     @abstractmethod       
     def best(self) -> tuple[Move, Node]:
         pass
+
+    @abstractmethod
+    def create_node(self, untried_actions: list[Move], player: str, parent: Node = None) -> Node:
+        pass
         
     def calc_best_move(self, max_iter: int = 1000, max_depth = -1):
         max_d = 0

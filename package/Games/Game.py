@@ -3,6 +3,9 @@ import numpy as np
 import enum as Enum
 from enum import Enum
 from copy import deepcopy
+# from Engines.player import player
+import package.Engines.player as player
+# import Engines.player
 
 class gameState(Enum):
     ENDED = 'E'
@@ -30,23 +33,30 @@ class Move(ABC):
 class Board(ABC):
     board: np.ndarray
     legal_moves: list[Move]
-    players: list[str] = ['X', 'O']
+    players: list
     state: gameState
     reward: float
-    winner: str
+    winner = None
     curr_player_idx: int
-    curr_player: str
+    curr_player = None
     history: list[Move]
     
-    def __init__(self, board_size: tuple, players: list[str] = ['X', 'O']) -> None:
+    def __init__(self, board_size: tuple, players: list = []) -> None:
         super().__init__()
-        self.board = np.full(board_size, fill_value=" ", dtype=str)
-        self.players = deepcopy(players)
         self.state = gameState.ONGOING
-        self.winner = ""
+        self.history = []
+        self.board = np.full(board_size, fill_value=" ", dtype=str)
+        
+        if len(players) == 0:
+            players = [player(self, "O")]
+        self.players = players
+        
+        for player in self.players:
+            player.board = self
+            
+        self.winner = None
         self.curr_player_idx = 0
         self.curr_player = players[0]
-        self.history = []
         
     def is_legal_move(self, move: Move):
         return move in self.legal_moves
@@ -63,46 +73,34 @@ class Board(ABC):
             self.curr_player_idx = self.players.__len__() - 1
         self.curr_player = self.players[self.curr_player_idx]
         
+    def make_move(self, move: Move):
+        self.history.append(move)
+        self.update_state(move)
+        self.next_player()
+    
+    def unmake_move(self, move: Move):
+        # this is a reverse function for self.make_move()
+        if move is None:
+            move = self.history.pop()
+        self.reverse_state(move)
+        self.prev_player()
+        
     @abstractmethod
     def create_move(self, input: str) -> Move:
         # function to be implemented by a child class, to create a move from input of the specific child class
         # for example: for a tictactoe_board, this function should read a user input and return a tictactoe_Move object
         pass        
-        
-    def move(self, move: Move):
-        self.history.append(move)
-        
-        self.make_move(move)
-        self.update_state(move)
-        
-        self.next_player()
     
     @abstractmethod
-    def make_move(self, move: Move):
+    def update_state(self, move: Move):
         # this function represents a move being done by a player.
-        # it should update self.board, update self.legal_moves and update self.reward
-        pass
-    
-    def unmove(self, move: Move = None):
-        if move is None:
-            move = self.history.pop()
-            
-        self.unmake_move(move)
-        self.prev_player()
-        
-        self.state = gameState.ONGOING
-        self.winner = ""
-        
-    @abstractmethod
-    def unmake_move(self, move: Move):
-        # this is a reverse function for self.make_move()
-        # it should update self.board and update self.legal_moves
+        # it should update self.board, self.legal_moves, self.reward, self.state, self.winner
         pass
     
     @abstractmethod
-    def update_state(self, last_move: Move):
-        # this function checks if the game is over
-        # it should ensure self.state and self.winner are correct for the state of the board
+    def reverse_state(self, move: Move):
+        # this function represents a move being undone by a player.
+        # it should update self.board, self.legal_moves, self.reward, self.state, self.winner
         pass
     
     # encodes the board to a numpy array. mainly useful for neural network models

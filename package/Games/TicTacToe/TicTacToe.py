@@ -1,4 +1,5 @@
-from Games.Game import Board, Move, gameState
+from package.Games.Game import Board, Move, gameState
+from package.Engines.player import player
 
 class TicTacToe_move(Move):
     location: tuple[int, int]
@@ -14,10 +15,9 @@ class TicTacToe_Board(Board):
     
     legal_moves: list[TicTacToe_move]
     
-    def __init__(self, board_size: tuple, players: list[str] = ['X', 'O']) -> None:
+    def __init__(self, board_size: tuple, players: list = []) -> None:
         super(TicTacToe_Board, self).__init__(board_size, players)
         self.legal_moves = [TicTacToe_move(f"{i},{j}") for i in range(board_size[0]) for j in range(board_size[1])]
-
     
     def create_move(self, input: str) -> Move:
         try:
@@ -25,14 +25,6 @@ class TicTacToe_Board(Board):
         except:
             pass
         return None
-    
-    def make_move(self, move: TicTacToe_move):
-        self.board[move.location[0], move.location[1]] = self.curr_player
-        self.legal_moves.remove(move)
-    
-    def unmake_move(self, move: TicTacToe_move):
-        self.board[move.location[0], move.location[1]] = ' '
-        self.legal_moves.append(move)
     
     def update_state(self, last_move: TicTacToe_move):
         y = last_move.location[0]
@@ -58,4 +50,9 @@ class TicTacToe_Board(Board):
 
             # win detected
             self.win()
+            
+    def reverse_state(self, move: TicTacToe_move):
+        self.board[move.location[0], move.location[1]] = " "
+        self.state = gameState.ONGOING
+        self.winner = None
         

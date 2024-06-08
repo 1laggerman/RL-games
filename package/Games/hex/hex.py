@@ -46,17 +46,6 @@ class hex_Board(Board):
         except:
             pass
         return None  
-        
-    def make_move(self, move: hex_Move):
-        self.history.append(move)
-        
-        self.board[*move.location] = self.curr_player
-        
-        self.legal_moves.remove(move)
-            
-        self.update_state(move)
-        if self.state == gameState.ONGOING:
-            self.next_player()
     
     def update_state(self, move: hex_Move):
         links = self.get_links(move)
@@ -112,18 +101,6 @@ class hex_Board(Board):
                 if self.board[link.location] == self.curr_player:
                     links.append(move - n)
         return links
-    
-    def unmake_move(self, move: hex_Move = None):
-        if move is None:
-            move = self.history.pop()
-        self.board[*move.location] = str(' ')
-        self.legal_moves.append(move)
-        
-        if self.state != gameState.ENDED:
-            self.prev_player()
-        
-        self.winner = ""
-        self.state = gameState.ONGOING
         
     def encode(self):
         board = deepcopy(self.board)
