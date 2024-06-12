@@ -72,8 +72,8 @@ class Board(ABC):
         self.history = []
         self.board = np.full(board_size, fill_value=" ", dtype=str)
         
-        if len(players) == 0:
-            players = [player(self, "O")]
+        # if len(players) == 0:
+        #     players = [(self, "O")]
         self.players = players
         
         for p in self.players:
