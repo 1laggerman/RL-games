@@ -6,8 +6,11 @@ class TicTacToe_move(Move):
     def __init__(self, name: str) -> None:
         super(TicTacToe_move, self).__init__(name)
         locs = name.split(",")
-        self.location[0] = int(locs[0])
-        self.location[1] = int(locs[1])
+        self.location = (int(locs[0]), int(locs[1]))
+        # self.location[1] = int(locs[1])
+        
+    def __eq__(self, __value: 'TicTacToe_move') -> bool:
+        return self.location[0] == __value.location[0] and self.location[1] == __value.location[1]
         
 
 class TicTacToe_Board(Board):
@@ -29,11 +32,12 @@ class TicTacToe_Board(Board):
         y = last_move.location[0]
         x = last_move.location[1]
         
-        player = self.curr_player
+        self.board[x, y] = self.curr_player.name
+        self.legal_moves.remove(last_move)
         directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
 
         for dx, dy in directions:
-            loc = (0, 0)
+            loc = [0, 0]
             if dx == 0:
                 loc[0] = x
             if dy == 0:
@@ -41,17 +45,42 @@ class TicTacToe_Board(Board):
             if dy == -1:
                 loc[1] = self.board.shape[1] - 1
                 
-            i = 1
-            while loc[0] + i * dx < self.board.shape[0] and loc[1] + i * dy < self.board.shape[1]:
-                if self.board[x + i * dx, y + i * dy] != player:
+            i = 0
+            move = TicTacToe_move(f"{loc[0]},{loc[1]}")
+            while move.location[0] >= 0 and move.location[0] < self.board.shape[0] and move.location[1] >= 0 and move.location[1] < self.board.shape[1]:
+                if self.board[loc[0] + i * dx, loc[1] + i * dy] != self.curr_player.name:
                     break
                 i += 1
+                move.location = (loc[0] + i * dx, loc[1] + i * dy)
 
-            # win detected
-            self.win()
+            if i == 3: # 3 in a row
+                self.win()
+                return
+        
+        if len(self.legal_moves) == 0:
+            self.draw()
+            return
+        
+        return self
             
     def reverse_state(self, move: TicTacToe_move):
         self.board[move.location[0], move.location[1]] = " "
         self.state = gameState.ONGOING
         self.winner = None
+        
+    def __str__(self):
+        board_str = ''
+        for i in range(self.board.shape[0]):
+            for j in range(self.board.shape[1]):
+                board_str += ' ' + self.board[i, j] + ' '
+                if j < self.board.shape[1] - 1:
+                    board_str += '|'
+            board_str += '\n'
+            
+            if i < self.board.shape[0] - 1:
+                dots = 4 * (self.board.shape[1]) - 1
+                board_str += '-' * dots + '\n'
+
+        return board_str
+    
         

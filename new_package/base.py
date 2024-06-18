@@ -28,9 +28,18 @@ def bind(board: 'Board', players: list['player']):
 
 def play(board: 'Board', players: list['player']):
     bind(board, players)
-    while board.state != gameState.ONGOING:
+    while board.state == gameState.ONGOING:
         move = board.curr_player.get_move()
+        if move is None:
+            print("Invalid move")
+            return
         board.make_move(move)
+        
+    if board.state == gameState.ENDED:
+        print(f"Winner: {board.winner.name}")
+        print(f"Reward: {board.reward}")
+    else:
+        print("Draw")
         
 class gameState(Enum):
     ENDED = 'E'
@@ -42,13 +51,14 @@ class Move(ABC):
     
     def __init__(self, name: str) -> None:
         super(Move, self).__init__()
-        self.name = name
+        self.name = name.replace(" ", "")
+        # self.name = name.join("")
         
     def __eq__(self, __value: "Move") -> bool:
         return self.name == __value.name
     
     def __str__(self) -> str:
-        return self.name
+        return '(' + self.name + ')'
     
     def __repr__(self):
         return str(self)
@@ -151,7 +161,7 @@ class Board(ABC):
         self.reward = -1
     
     def __str__(self):
-        return self.board
+        return str(self.board)
     
     def __repr__(self) -> str:
         return str(self)
