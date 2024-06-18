@@ -4,12 +4,14 @@ import random
 import math
 from copy import deepcopy
 from abc import ABC, abstractmethod
+import tqdm
+import time
 
 class Node(ABC):
     visits: int = 0
     eval: float = 0
-    parent: "Node"
-    player: str
+    parent: 'Node'
+    player: 'player'
     children: list[tuple[Move, "Node"]]
     untried_actions: list[Move]
     is_leaf: bool = False
@@ -55,16 +57,27 @@ class SearchTree(player, ABC):
     root: Node
     board: Board
     
-    def __init__(self, game_board: Board) -> None:
-        self.board = game_board
+    def __init__(self, game_board: Board, name: str) -> None:
+        super(SearchTree, self).__init__(game_board, name)
+        
+        self.root = None
+        # self.board = game_board
+        # self.root = self.create_node(game_board.legal_moves, player=game_board.curr_player)
         # self.root = Node(game_board.legal_moves, player=game_board.curr_player)
+        
+    def get_move(self):
+        if self.root == None:
+            self.root = self.create_node(self.board.legal_moves, player=self.board.curr_player, parent=None)
+        
+        self.calc_best_move(max_iter=100, max_depth=-1)
+        return self.best()
         
     @abstractmethod       
     def best(self) -> tuple[Move, Node]:
         pass
 
     @abstractmethod
-    def create_node(self, untried_actions: list[Move], player: str, parent: Node = None) -> Node:
+    def create_node(self, untried_actions: list[Move], player: player, parent: Node = None) -> Node:
         pass
         
     def calc_best_move(self, max_iter: int = 1000, max_depth = -1):
@@ -78,14 +91,21 @@ class SearchTree(player, ABC):
             # node.eval = node.evaluate(self.board)
             max_iter -= 1
         
-        for _ in range(max_iter):
+        # with tqdm.tqdm(total=max_iter)
+        for _ in tqdm.tqdm(range(max_iter)):
+            t0 = time.time()
+        # for _ in range(max_iter):
             node = self.root
             board = deepcopy(self.board)
             depth = 0
+            
+            t1 = time.time()
             while len(node.untried_actions) == 0 and not node.is_leaf:
                 (move, node) = node.select_child()
                 board.make_move(move)
                 depth += 1
+            
+            t2 = time.time()
             
             ev = 0
             if not node.is_leaf:
@@ -93,11 +113,22 @@ class SearchTree(player, ABC):
                     (move, node) = node.expand(board)
                     board.make_move(move)
                     depth += 1
+                    
+            t3 = time.time()
             ev = node.evaluate(board)
             
+            t4 = time.time()
             node.backpropagate(ev)
             if depth > max_d:
                 max_d = depth
+                
+            t5 = time.time()
+            
+            print("deepcopy time: ", t1 - t0)
+            print("find node time: ", t2 - t1)
+            print("expand node time: ", t3 - t2)
+            print("eval node time: ", t4 - t3)
+            print("backpropagate node time: ", t5 - t4)
     
     def move(self, move: Move):
         found = False

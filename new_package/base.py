@@ -22,9 +22,11 @@ def bind(board: 'Board', players: list['player']):
         print("No players")
         return
     
+    board.players = players
+    board.curr_player = players[board.curr_player_idx]
+    
     for player in players:
         player.board = board
-        board.players = players
 
 def play(board: 'Board', players: list['player']):
     bind(board, players)
@@ -91,7 +93,8 @@ class Board(ABC):
             
         self.winner = None
         self.curr_player_idx = 0
-        self.curr_player = players[0]
+        if len(players) > 0:
+            self.curr_player = players[0]
         
     def is_legal_move(self, move: Move):
         return move in self.legal_moves
@@ -113,7 +116,7 @@ class Board(ABC):
         self.update_state(move)
         self.next_player()
     
-    def unmake_move(self, move: Move):
+    def unmake_move(self, move: Move = None):
         # this is a reverse function for self.make_move()
         if move is None:
             move = self.history.pop()

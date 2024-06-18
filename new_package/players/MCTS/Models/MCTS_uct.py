@@ -1,4 +1,4 @@
-from new_package.base import Move, Board, gameState
+from new_package.base import Move, Board, gameState, player
 from new_package.players.MCTS.Treeplayer import Node, SearchTree
 
 import random
@@ -8,7 +8,7 @@ import copy
 
 class MCTS_uct_Node(Node):
     
-    def __init__(self, untried_actions: list[Move], player: str, parent: "MCTS_uct_Node" = None) -> None:
+    def __init__(self, untried_actions: list[Move], player: player, parent: "MCTS_uct_Node" = None) -> None:
         super(MCTS_uct_Node, self).__init__(untried_actions=untried_actions, player=player, parent=parent)
     
     def select_child(self):
@@ -44,6 +44,7 @@ class MCTS_uct_Node(Node):
             board.next_player()
             new_Node.player = board.curr_player
             board.prev_player()
+        
         board.unmake_move()
         new_child = (new_action, new_Node)
         self.children.append(new_child)
@@ -63,10 +64,13 @@ class MCTS_uct_Node(Node):
     
 class MCTS_uct_Tree(SearchTree):
     
-    def __init__(self, game_board: Board) -> None:
-        super(MCTS_uct_Tree, self).__init__(game_board)
-        self.root = MCTS_uct_Node(copy.deepcopy(game_board.legal_moves), player=game_board.curr_player)
+    def __init__(self, game_board: Board, name: str) -> None:
+        super(MCTS_uct_Tree, self).__init__(game_board, name)
+        # self.root = MCTS_uct_Node(copy.deepcopy(game_board.legal_moves), player=game_board.curr_player)
         
     def best(self):
         return min(self.root.children, key=lambda c: c[1].eval / c[1].visits if c[1].visits > 0 else 0)
+    
+    def create_node(self, untried_actions: list[Move], player: player, parent: Node = None) -> Node:
+        return MCTS_uct_Node(untried_actions, player, parent)
 
