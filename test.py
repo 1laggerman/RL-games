@@ -12,8 +12,8 @@ from new_package.base import play
 # p1 = humanPlayer(None, "X")
 # players = [p1, p2]
 board = TicTacToe_Board((3, 3))
-p1 = MCTS_uct_Tree(None, "X")
-p2 = humanPlayer(None, "O")
+p1 = MCTS_uct_Tree(board, "X")
+p2 = humanPlayer(board, "O")
 players = [p1, p2]
 
 # print(board)

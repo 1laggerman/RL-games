@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import enum as Enum
 from enum import Enum
-from copy import deepcopy
+from copy import deepcopy, copy
 
 
 class player(ABC):
@@ -64,8 +64,6 @@ class Move(ABC):
     
     def __repr__(self):
         return str(self)
-    
-          
 
 class Board(ABC):
     board: np.ndarray
@@ -170,3 +168,18 @@ class Board(ABC):
     
     def map_move(self, move: Move) -> int:
         return int(move.name)
+    
+    
+    # TODO: improve deepcopy to be most efficient
+    def __deepcopy__(self, memo):
+        new_board = Board(self.board.shape, players=self.players)
+        self.board = self.board.copy()
+        self.legal_moves = self.legal_moves.copy()
+        self.history = self.history.copy()
+        self.state = copy(self.state)
+        self.reward = self.reward
+        self.curr_player_idx = self.curr_player_idx
+        self.curr_player = self.curr_player
+        self.players = self.players
+        self.winner = self.winner
+        return new_board

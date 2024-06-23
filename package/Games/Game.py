@@ -1,4 +1,4 @@
-from package.Engines.player import player as p
+from package.Engines.player import player
 
 from abc import ABC, abstractmethod
 import numpy as np
