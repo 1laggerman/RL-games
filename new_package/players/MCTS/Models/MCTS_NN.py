@@ -1,5 +1,5 @@
 from new_package.base import Move, Board, gameState
-from new_package.players.MCTS.Treeplayer import Node, SearchTree
+from new_package.players.MCTS.Treeplayer import Node, TreePlayer
 from new_package.players.MCTS.Models.ML_architecture.resnet import BaseRenset
 
 import math
@@ -121,7 +121,7 @@ class MCTS_NN_Node(Node):
     #     if self.parent:
     #         self.parent.bp(1-eval)
     
-class MCTS_NN_Tree(SearchTree):
+class MCTS_NN_Tree(TreePlayer):
     root: MCTS_NN_Node
     
     def __init__(self, game_board: Board) -> None:

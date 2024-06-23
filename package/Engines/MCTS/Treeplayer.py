@@ -71,32 +71,35 @@ class SearchTree(player, ABC):
     def calc_best_move(self, max_iter: int = 1000, max_depth = -1):
         max_d = 0
         while len(self.root.untried_actions) > 0:
-            board = deepcopy(self.board)
-            (move, node) = self.root.expand(board)
-            board.make_move(move)
-            ev = node.evaluate(board)
+            # board = deepcopy(self.board)
+            (move, node) = self.root.expand(self.board)
+            self.board.make_move(move)
+            ev = node.evaluate(self.board)
             node.backpropagate(ev)
+            self.board.unmake_move()
             # node.eval = node.evaluate(self.board)
             max_iter -= 1
         
         for _ in range(max_iter):
             node = self.root
-            board = deepcopy(self.board)
+            # board = deepcopy(self.board)
             depth = 0
             while len(node.untried_actions) == 0 and not node.is_leaf:
                 (move, node) = node.select_child()
-                board.make_move(move)
+                self.board.make_move(move)
                 depth += 1
             
             ev = 0
             if not node.is_leaf:
                 if max_depth <= 1 or depth + 1 < max_depth:
-                    (move, node) = node.expand(board)
-                    board.make_move(move)
+                    (move, node) = node.expand(self.board)
+                    self.board.make_move(move)
                     depth += 1
-            ev = node.evaluate(board)
+            ev = node.evaluate(self.board)
             
             node.backpropagate(ev)
+            for d in range(depth):
+                self.board.unmake_move()
             if depth > max_d:
                 max_d = depth
     

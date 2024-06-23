@@ -77,10 +77,9 @@ class Board(ABC):
         self.update_state(move)
         self.next_player()
     
-    def unmake_move(self, move: Move):
+    def unmake_move(self):
         # this is a reverse function for self.make_move()
-        if move is None:
-            move = self.history.pop()
+        move = self.history.pop()
         self.reverse_state(move)
         self.prev_player()
         

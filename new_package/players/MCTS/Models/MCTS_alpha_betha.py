@@ -1,5 +1,5 @@
 from new_package.base import Move, Board, gameState
-from new_package.players.MCTS.Treeplayer import Node, SearchTree
+from new_package.players.MCTS.Treeplayer import Node, TreePlayer
 
 class MCTS_ab_Node(Node):
     

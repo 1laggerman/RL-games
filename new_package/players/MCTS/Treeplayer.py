@@ -53,12 +53,12 @@ class Node(ABC):
     def __repr__(self) -> str:
         return str(self)
             
-class SearchTree(player, ABC):
+class TreePlayer(player, ABC):
     root: Node
     board: Board
     
     def __init__(self, game_board: Board, name: str) -> None:
-        super(SearchTree, self).__init__(game_board, name)
+        super(TreePlayer, self).__init__(game_board, name)
         
         self.root = None
         # self.board = game_board
@@ -83,11 +83,12 @@ class SearchTree(player, ABC):
     def calc_best_move(self, max_iter: int = 1000, max_depth = -1):
         max_d = 0
         while len(self.root.untried_actions) > 0:
-            board = deepcopy(self.board)
-            (move, node) = self.root.expand(board)
-            board.make_move(move)
-            ev = node.evaluate(board)
+            # board = deepcopy(self.board)
+            (move, node) = self.root.expand(self.board)
+            self.board.make_move(move)
+            ev = node.evaluate(self.board)
             node.backpropagate(ev)
+            self.board.unmake_move()
             # node.eval = node.evaluate(self.board)
             max_iter -= 1
         
@@ -96,13 +97,13 @@ class SearchTree(player, ABC):
             t0 = time.time()
         # for _ in range(max_iter):
             node = self.root
-            board = deepcopy(self.board)
+            # board = deepcopy(self.board)
             depth = 0
             
             t1 = time.time()
             while len(node.untried_actions) == 0 and not node.is_leaf:
                 (move, node) = node.select_child()
-                board.make_move(move)
+                self.board.make_move(move)
                 depth += 1
             
             t2 = time.time()
@@ -110,14 +111,17 @@ class SearchTree(player, ABC):
             ev = 0
             if not node.is_leaf:
                 if max_depth <= 1 or depth + 1 < max_depth:
-                    (move, node) = node.expand(board)
-                    board.make_move(move)
+                    (move, node) = node.expand(self.board)
+                    self.board.make_move(move)
                     depth += 1
                     
             t3 = time.time()
-            ev = node.evaluate(board)
+            ev = node.evaluate(self.board)
             
             t4 = time.time()
+            for d in range(depth):
+                self.board.unmake_move()
+            
             node.backpropagate(ev)
             if depth > max_d:
                 max_d = depth

@@ -1,5 +1,5 @@
 from new_package.base import Move, Board, gameState, player
-from new_package.players.MCTS.Treeplayer import Node, SearchTree
+from new_package.players.MCTS.Treeplayer import Node, TreePlayer
 
 import random
 import math
@@ -62,7 +62,7 @@ class MCTS_uct_Node(Node):
             return 1
         return 0
     
-class MCTS_uct_Tree(SearchTree):
+class MCTS_uct_Tree(TreePlayer):
     
     def __init__(self, game_board: Board, name: str) -> None:
         super(MCTS_uct_Tree, self).__init__(game_board, name)
