@@ -36,6 +36,7 @@ def play(board: 'Board', players: list['player']):
             print("Invalid move")
             return
         board.make_move(move)
+        # TODO: alert players of move
         
     if board.state == gameState.ENDED:
         print(f"Winner: {board.winner.name}")
@@ -81,6 +82,7 @@ class Board(ABC):
         self.state = gameState.ONGOING
         self.history = []
         self.board = np.full(board_size, fill_value=" ", dtype=str)
+        self.reward = 0
         
         # if len(players) == 0:
         #     players = [(self, "O")]
@@ -170,16 +172,21 @@ class Board(ABC):
         return int(move.name)
     
     
-    # TODO: improve deepcopy to be most efficient
     def __deepcopy__(self, memo):
-        new_board = Board(self.board.shape, players=self.players)
-        self.board = self.board.copy()
-        self.legal_moves = self.legal_moves.copy()
-        self.history = self.history.copy()
-        self.state = copy(self.state)
-        self.reward = self.reward
-        self.curr_player_idx = self.curr_player_idx
-        self.curr_player = self.curr_player
-        self.players = self.players
-        self.winner = self.winner
-        return new_board
+        
+        cls = self.__class__
+        result = cls.__new__(cls)
+        
+        memo[id(self)] = result
+        
+        result.board = deepcopy(self.board, memo)
+        result.legal_moves = deepcopy(self.legal_moves)
+        result.history = deepcopy(self.history)
+        result.state = self.state
+        result.reward = self.reward
+        result.curr_player_idx = self.curr_player_idx
+        result.curr_player = self.curr_player
+        result.players = self.players
+        result.winner = self.winner
+        
+        return result

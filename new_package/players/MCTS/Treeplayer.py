@@ -70,7 +70,7 @@ class TreePlayer(player, ABC):
             self.root = self.create_node(self.board.legal_moves, player=self.board.curr_player, parent=None)
         
         self.calc_best_move(max_iter=100, max_depth=-1)
-        return self.best()
+        return self.best()[0]
         
     @abstractmethod       
     def best(self) -> tuple[Move, Node]:
@@ -83,27 +83,26 @@ class TreePlayer(player, ABC):
     def calc_best_move(self, max_iter: int = 1000, max_depth = -1):
         max_d = 0
         while len(self.root.untried_actions) > 0:
-            # board = deepcopy(self.board)
-            (move, node) = self.root.expand(self.board)
-            self.board.make_move(move)
-            ev = node.evaluate(self.board)
-            node.backpropagate(ev)
-            self.board.unmake_move()
-            # node.eval = node.evaluate(self.board)
+            board = deepcopy(self.board)
+            (move, node) = self.root.expand(board)
+            board.make_move(move)
+            # ev = node.evaluate(board)
+            # self.board.unmake_move()
+            node.eval = node.evaluate(board)
+            node.backpropagate(node.eval)
             max_iter -= 1
         
         # with tqdm.tqdm(total=max_iter)
         for _ in tqdm.tqdm(range(max_iter)):
             t0 = time.time()
-        # for _ in range(max_iter):
             node = self.root
-            # board = deepcopy(self.board)
+            board = deepcopy(self.board)
             depth = 0
             
             t1 = time.time()
             while len(node.untried_actions) == 0 and not node.is_leaf:
                 (move, node) = node.select_child()
-                self.board.make_move(move)
+                board.make_move(move)
                 depth += 1
             
             t2 = time.time()
@@ -111,16 +110,16 @@ class TreePlayer(player, ABC):
             ev = 0
             if not node.is_leaf:
                 if max_depth <= 1 or depth + 1 < max_depth:
-                    (move, node) = node.expand(self.board)
-                    self.board.make_move(move)
+                    (move, node) = node.expand(board)
+                    board.make_move(move)
                     depth += 1
                     
             t3 = time.time()
-            ev = node.evaluate(self.board)
+            ev = node.evaluate(board)
             
             t4 = time.time()
-            for d in range(depth):
-                self.board.unmake_move()
+            # for d in range(depth):
+            #     self.board.unmake_move()
             
             node.backpropagate(ev)
             if depth > max_d:
@@ -128,11 +127,11 @@ class TreePlayer(player, ABC):
                 
             t5 = time.time()
             
-            print("deepcopy time: ", t1 - t0)
-            print("find node time: ", t2 - t1)
-            print("expand node time: ", t3 - t2)
-            print("eval node time: ", t4 - t3)
-            print("backpropagate node time: ", t5 - t4)
+            # print("deepcopy time: ", t1 - t0)
+            # print("find node time: ", t2 - t1)
+            # print("expand node time: ", t3 - t2)
+            # print("eval node time: ", t4 - t3)
+            # print("backpropagate node time: ", t5 - t4)
     
     def move(self, move: Move):
         found = False

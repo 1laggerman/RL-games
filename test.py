@@ -1,7 +1,9 @@
 from new_package.Games.TicTacToe.TicTacToe import TicTacToe_Board, TicTacToe_move
 from new_package.players.Input.terminalInput import terminalPlayer as humanPlayer
 from new_package.players.MCTS.Models.MCTS_uct import MCTS_uct_Tree
-from new_package.base import play
+from new_package.base import play, bind
+import time
+from copy import deepcopy
 # from package.gameplay.play import play
 
 
@@ -11,12 +13,23 @@ from new_package.base import play
 
 # p1 = humanPlayer(None, "X")
 # players = [p1, p2]
+
 board = TicTacToe_Board((3, 3))
 p1 = MCTS_uct_Tree(board, "X")
 p2 = humanPlayer(board, "O")
+
+# bind(board, [p1, p2])
 players = [p1, p2]
 
 # print(board)
 play(board=board, players=players)
+
+# start = time.time()
+
+# b2 = deepcopy(board)
+
+# end = time.time()
+
+# print(end - start)
 
 
