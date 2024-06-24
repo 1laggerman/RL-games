@@ -8,6 +8,7 @@ import tqdm
 import time
 
 class Node(ABC):
+    # TODO: add descrition
     visits: int = 0
     eval: float = 0
     parent: 'Node'
@@ -29,17 +30,21 @@ class Node(ABC):
 
     @abstractmethod        
     def select_child(self) -> tuple[Move, "Node"]:
+        # TODO: add descrition
         pass
     
     @abstractmethod
     def evaluate(self, board: Board) -> float:
+        # TODO: add descrition
         pass
             
     @abstractmethod
     def expand(self, board: Board, move: Move = None) -> tuple[Move, "Node"]:
+        # TODO: add descrition
         pass
         
     def backpropagate(self, eval: float):
+        # TODO: add descrition
         self.visits += 1
         
         self.eval += eval
@@ -54,6 +59,7 @@ class Node(ABC):
         return str(self)
             
 class TreePlayer(player, ABC):
+    # TODO: add descrition
     root: Node
     board: Board
     
@@ -66,6 +72,7 @@ class TreePlayer(player, ABC):
         # self.root = Node(game_board.legal_moves, player=game_board.curr_player)
         
     def get_move(self):
+        # TODO: add descrition
         if self.root == None:
             self.root = self.create_node(self.board.legal_moves, player=self.board.curr_player, parent=None)
         
@@ -74,13 +81,16 @@ class TreePlayer(player, ABC):
         
     @abstractmethod       
     def best(self) -> tuple[Move, Node]:
+        # TODO: add descrition
         pass
 
     @abstractmethod
     def create_node(self, untried_actions: list[Move], player: player, parent: Node = None) -> Node:
+        # TODO: add descrition
         pass
         
     def calc_best_move(self, max_iter: int = 1000, max_depth = -1):
+        # TODO: add descrition
         max_d = 0
         while len(self.root.untried_actions) > 0:
             board = deepcopy(self.board)
@@ -134,6 +144,7 @@ class TreePlayer(player, ABC):
             # print("backpropagate node time: ", t5 - t4)
     
     def move(self, move: Move):
+        # TODO: add descrition
         found = False
         for m, node in self.root.children:
             if m == move:
@@ -144,10 +155,11 @@ class TreePlayer(player, ABC):
         if not found:
             (move, node) = self.root.expand(self.board, move)
             self.root = node
-        self.board.make_move(move)
+        # self.board.make_move(move)
         return
         
     def run(self, input_players: list[str], debug = False, engine_max_iter: int = 1000, engine_max_depth: int = -1):
+        # TODO: add descrition
         while self.board.state == gameState.ONGOING:
             print('___________________________')
             self.calc_best_move(max_iter=engine_max_iter, max_depth=engine_max_depth)

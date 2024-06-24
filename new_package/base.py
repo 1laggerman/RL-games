@@ -6,6 +6,7 @@ from copy import deepcopy, copy
 
 
 class player(ABC):
+    # TODO: add descrition
     board: 'Board'
     name: str
     
@@ -15,9 +16,15 @@ class player(ABC):
 
     @abstractmethod
     def get_move(self):
+        # TODO: add descrition
+        pass
+    
+    def move(self, move: 'Move'):
+        # TODO: add descrition
         pass
     
 def bind(board: 'Board', players: list['player']):
+    # TODO: add descrition
     if len(players) == 0:
         print("No players")
         return
@@ -29,6 +36,7 @@ def bind(board: 'Board', players: list['player']):
         player.board = board
 
 def play(board: 'Board', players: list['player']):
+    # TODO: add descrition
     bind(board, players)
     while board.state == gameState.ONGOING:
         move = board.curr_player.get_move()
@@ -36,7 +44,6 @@ def play(board: 'Board', players: list['player']):
             print("Invalid move")
             return
         board.make_move(move)
-        # TODO: alert players of move
         
     if board.state == gameState.ENDED:
         print(f"Winner: {board.winner.name}")
@@ -50,6 +57,7 @@ class gameState(Enum):
     ONGOING = 'P'
 
 class Move(ABC):
+    # TODO: add descrition
     name: str = ""
     
     def __init__(self, name: str) -> None:
@@ -67,6 +75,7 @@ class Move(ABC):
         return str(self)
 
 class Board(ABC):
+    # TODO: add descrition
     board: np.ndarray
     legal_moves: list[Move]
     players: list['player']
@@ -97,51 +106,78 @@ class Board(ABC):
             self.curr_player = players[0]
         
     def is_legal_move(self, move: Move):
+        # TODO: add descrition
         return move in self.legal_moves
     
     def next_player(self):
+        # TODO: add descrition
         self.curr_player_idx = self.curr_player_idx + 1
         if self.curr_player_idx == self.players.__len__():
             self.curr_player_idx = 0
         self.curr_player = self.players[self.curr_player_idx]
         
     def prev_player(self):
+        # TODO: add descrition
         self.curr_player_idx = self.curr_player_idx - 1
         if self.curr_player_idx < 0:
             self.curr_player_idx = self.players.__len__() - 1
         self.curr_player = self.players[self.curr_player_idx]
         
     def make_move(self, move: Move):
+        # TODO: add descrition
         self.history.append(move)
         self.update_state(move)
         self.next_player()
     
     def unmake_move(self, move: Move = None):
-        # this is a reverse function for self.make_move()
+        # TODO: add descrition
         move = self.history.pop()
         self.reverse_state(move)
         self.prev_player()
         
     @abstractmethod
     def create_move(self, input: str) -> Move:
-        # function to be implemented by a child class, to create a move from input of the specific child class
-        # for example: for a tictactoe_board, this function should read a user input and return a tictactoe_Move object
+        """
+        function to be implemented by a child class, to create a move from input of the specific child class
+
+        Args:
+            input (str): A string encoding of the move
+
+        Returns:
+            Move: a move object of the specific child class
+        """
         pass        
     
     @abstractmethod
-    def update_state(self, move: Move):
-        # this function represents a move being done by a player.
-        # it should update self.board, self.legal_moves, self.reward, self.state, self.winner
+    def update_state(self, move: Move) -> float:
+        """
+        this function represents a move being done by a player.
+        
+        Args:
+            move (Move): the move being made
+        
+        Effect:
+            self.board - update board matrix visuals\n
+            self.legal_moves - update legal moves to be made\n
+            self.reward - update the total reward from this game\n
+            self.state - is the game over?\n
+            self.winner - if the game is over - update winner\n
+            
+        Returns:
+            the reward for the move
+        """
         pass
     
     @abstractmethod
     def reverse_state(self, move: Move):
+        # TODO: add descrition
         # this function represents a move being undone by a player.
         # it should update self.board, self.legal_moves, self.reward, self.state, self.winner
         pass
     
     # encodes the board to a numpy array. mainly useful for neural network models
     def encode(self) -> np.ndarray:
+        # TODO: add descrition
         board = deepcopy(self.board)
         player_states = np.array([board == player for player in self.players])
         empty_state = self.board == ' '
@@ -149,15 +185,18 @@ class Board(ABC):
         return enc.astype(np.float32)
     
     def win(self):
+        # TODO: add descrition
         self.state = gameState.ENDED
         self.winner = self.curr_player
         self.reward = 1
         
     def draw(self):
+        # TODO: add descrition
         self.state = gameState.DRAW
         self.reward = 0
         
     def lose(self):
+        # TODO: add descrition
         self.state = gameState.ENDED
         self.winner = self.players[self.curr_player_idx - 1]
         self.reward = -1
@@ -169,6 +208,7 @@ class Board(ABC):
         return str(self)
     
     def map_move(self, move: Move) -> int:
+        # TODO: add descrition
         return int(move.name)
     
     
