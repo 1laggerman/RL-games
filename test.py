@@ -1,9 +1,10 @@
-from new_package.Games.TicTacToe.TicTacToe import TicTacToe_Board, TicTacToe_move
-from new_package.players.Input.terminalInput import terminalPlayer as humanPlayer
-from new_package.players.MCTS.Models.MCTS_uct import MCTS_uct_Tree
-from new_package.base import play, bind
+from src.Games.TicTacToe.TicTacToe import TicTacToe_Board, TicTacToe_move
+from src.players.Input.terminalInput import terminalPlayer as humanPlayer
+from src.players.MCTS.Models.MCTS_uct import MCTS_uct_Tree
+from src.base import play, bind, Piece
 import time
 from copy import deepcopy
+import numpy as np
 # from package.gameplay.play import play
 
 
@@ -15,14 +16,17 @@ from copy import deepcopy
 # players = [p1, p2]
 
 board = TicTacToe_Board((3, 3))
-p1 = MCTS_uct_Tree(board, "X")
-p2 = humanPlayer(board, "O")
+p = humanPlayer(board, "X")
 
-# bind(board, [p1, p2])
-players = [p1, p2]
+print(board)
+board.board[0, 0] = Piece(p.name, p, location=(0, 0))
+print(board)
+# p1 = MCTS_uct_Tree(board, "X")
+# p2 = humanPlayer(board, "O")
 
-# print(board)
-play(board=board, players=players)
+# players = [p1, p2]
+
+# play(board=board, players=players)
 
 # start = time.time()
 
@@ -31,5 +35,9 @@ play(board=board, players=players)
 # end = time.time()
 
 # print(end - start)
+
+# n = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+
+# print(n[(1, 1)])
 
 
