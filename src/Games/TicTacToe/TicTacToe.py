@@ -1,6 +1,13 @@
-from src.base import Board, Move, gameState, player
+from src.base import Board, Move, gameState, player, Piece
 
 class TicTacToe_move(Move):
+    """
+    A move for a TicTacToe game.
+    
+    Attributes:
+        * location (tuple[int, int]): The location of the move on the board.
+        * name (str): The name of the move. format: "x,y"
+    """
     location: tuple[int, int]
         
     def __init__(self, name: str) -> None:
@@ -14,6 +21,18 @@ class TicTacToe_move(Move):
         
 
 class TicTacToe_Board(Board):
+    """
+    A TicTacToe game board.
+
+    Attributes:
+        Same as super class(Board)
+
+    Methods:
+        update_state(last_move: TicTacToe_move): Updates the board state after a move was made.
+        reverse_state(): Reverses the board state.
+        create_move(input: str): Creates a TicTacToe_move from a string with format "x,y".
+        __str__(): Returns a string representation of the board state to draw the board in the terminal.
+    """
     
     legal_moves: list[TicTacToe_move]
     
@@ -32,7 +51,7 @@ class TicTacToe_Board(Board):
         y = last_move.location[0]
         x = last_move.location[1]
         
-        self.board[x, y] = self.curr_player.name
+        self.board[x, y] = Piece(self.curr_player.name, self.curr_player, location=(x, y))
         self.legal_moves.remove(last_move)
         directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
 
@@ -48,7 +67,8 @@ class TicTacToe_Board(Board):
             i = 0
             move = TicTacToe_move(f"{loc[0]},{loc[1]}")
             while move.location[0] >= 0 and move.location[0] < self.board.shape[0] and move.location[1] >= 0 and move.location[1] < self.board.shape[1]:
-                if self.board[loc[0] + i * dx, loc[1] + i * dy] != self.curr_player.name:
+                location: Piece = self.board[loc[0] + i * dx, loc[1] + i * dy]
+                if location is None or location.name != self.curr_player.name:
                     break
                 i += 1
                 move.location = (loc[0] + i * dx, loc[1] + i * dy)
@@ -64,7 +84,7 @@ class TicTacToe_Board(Board):
         return self
             
     def reverse_state(self, move: TicTacToe_move):
-        self.board[move.location[0], move.location[1]] = " "
+        self.board[move.location[0], move.location[1]] = None
         self.legal_moves.append(move)
         self.state = gameState.ONGOING
         self.winner = None

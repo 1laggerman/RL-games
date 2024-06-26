@@ -5,6 +5,7 @@ from src.base import play, bind, Piece
 import time
 from copy import deepcopy
 import numpy as np
+from typing import Any
 # from package.gameplay.play import play
 
 
@@ -15,12 +16,8 @@ import numpy as np
 # p1 = humanPlayer(None, "X")
 # players = [p1, p2]
 
-board = TicTacToe_Board((3, 3))
-p = humanPlayer(board, "X")
+# board = TicTacToe_Board((3, 3))
 
-print(board)
-board.board[0, 0] = Piece(p.name, p, location=(0, 0))
-print(board)
 # p1 = MCTS_uct_Tree(board, "X")
 # p2 = humanPlayer(board, "O")
 

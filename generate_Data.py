@@ -1,9 +1,14 @@
-from Models.MCTS_UCT import MCTS_uct_Node, MCTS_uct_Tree
-from Games.hex.hex import hex_Board, hex_Move
-from Games.connect4.connectFour import connect4_Board, connect4_Move
-from Games.Game import gameState
+# from Models.MCTS_UCT import MCTS_uct_Node, MCTS_uct_Tree
+# from Games.hex.hex import hex_Board, hex_Move
+# from Games.connect4.connectFour import connect4_Board, connect4_Move
+# from Games.Game import gameState
 import random
 import numpy as np
+from src.base import gameState
+
+from src.Games.connect4.connectFour import connect4_Board, connect4_Move
+from src.players.MCTS.Models.MCTS_uct import MCTS_uct_Node, MCTS_uct_Tree
+
 
 game_board = connect4_Board(6, 7, players=['X', 'O'])
 

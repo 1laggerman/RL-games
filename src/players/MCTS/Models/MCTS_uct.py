@@ -7,6 +7,14 @@ import copy
 
 
 class MCTS_uct_Node(Node):
+    """
+    A node for a simulation uct tree
+    
+    Methods:
+        * select_child(): Select the child node to explore using uct score
+        * expand(board: Board, move: Move = None): Expand the tree by creating a new child node for the given move
+        * evaluate(board: Board): Evaluate the node using a random game simulation
+    """
     
     def __init__(self, untried_actions: list[Move], player: player, parent: "MCTS_uct_Node" = None) -> None:
         super(MCTS_uct_Node, self).__init__(untried_actions=untried_actions, player=player, parent=parent)
@@ -63,6 +71,13 @@ class MCTS_uct_Node(Node):
         return 0
     
 class MCTS_uct_Tree(TreePlayer):
+    """
+    A tree player using the uct algorithm
+    
+    Methods:
+        * best(): Return the Node with the minimum eval/visits for the next player(what is the move that is the worst for the opponment?)
+        * create_node(untried_actions: list[Move], player: player, parent: Node = None) -> Node: Create a new uct node
+    """
     
     def __init__(self, game_board: Board, name: str) -> None:
         super(MCTS_uct_Tree, self).__init__(game_board, name)

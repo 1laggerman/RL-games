@@ -1,4 +1,4 @@
-from src.base import Board, Move, gameState
+from src.base import Board, Move, gameState, Piece
 import numpy as np
 
 class connect4_Move(Move):    
@@ -41,7 +41,10 @@ class connect4_Board(Board):
     def make_move(self, move: connect4_Move):
         self.history.append(move)
         
-        self.board[self.cols_heights[move.location], move.location] = self.curr_player
+        row = self.cols_heights[move.location]
+        col = move.location
+        
+        self.board[row, col] = Piece(self.curr_player.name, self.curr_player, location=(row, col))
         self.cols_heights[move.location] = self.cols_heights[move.location] + 1
         
         if self.cols_heights[move.location] == self.rows():
@@ -53,7 +56,7 @@ class connect4_Board(Board):
     def unmake_move(self, move: connect4_Move = None):
         if move == None:
             move = self.history.pop()
-        self.board[self.cols_heights[move.location] - 1, move.location] = " "
+        self.board[self.cols_heights[move.location] - 1, move.location] = None
         if self.cols_heights[move.location] == self.rows():
             self.legal_moves.insert(move.location, connect4_Move(move.name, move.location))
         self.cols_heights[move.location] = self.cols_heights[move.location] - 1

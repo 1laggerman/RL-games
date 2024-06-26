@@ -95,11 +95,11 @@ class hex_Board(Board):
         for n in neighbors:
             link = move + n
             if link.location[0] >= 0 and link.location[1] >= 0 and link.location[0] < self.board.shape[1] and link.location[1] < self.board.shape[0]:
-                if self.board[link.location] == self.curr_player:
+                if self.board[link.location] == self.curr_player.name:
                     links.append(move + n)
             link = move - n
             if link.location[0] >= 0 and link.location[1] >= 0 and link.location[0] < self.board.shape[1] and link.location[1] < self.board.shape[0]:
-                if self.board[link.location] == self.curr_player:
+                if self.board[link.location] == self.curr_player.name:
                     links.append(move - n)
         return links
         

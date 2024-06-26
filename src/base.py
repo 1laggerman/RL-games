@@ -4,34 +4,6 @@ import enum as Enum
 from enum import Enum
 from copy import deepcopy, copy
 
-class Piece(ABC):
-    """
-    Abstract pieace class
-    """
-    name: str
-    player: 'player'
-    location: tuple[int]
-    
-    def __init__(self, name: str, player: 'player', location: tuple[int]) -> None:
-        self.player = player
-        self.name = name
-        self.location = location
-        
-    def __str__(self) -> str:
-        return self.name
-    
-    def __repr__(self) -> str:
-        return str(self)
-    
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        result.name = self.name
-        result.player = self.player
-        result.location = copy(self.location)
-        return result
-
-
 class player(ABC):
     """
     A basic abstract player class
@@ -59,7 +31,7 @@ class player(ABC):
         chooses a move to be played using self.board
 
         Returns:
-            Move: the move to be played
+            * Move: the move to be played
         """
         pass
     
@@ -69,56 +41,16 @@ class player(ABC):
         informs the player of a move being played on the board
         
         Args:
-            move (Move): the move being played
+            * move (Move): the move being played
         """
         pass
-    
-def bind(board: 'Board', players: list['player']):
-    """
-    binds board and players to each other
-    couses each side to hold a reference to the other
-
-    Args:
-        board (Board): the board to be played
-        players (list[player]): the players playing the game
-    """
-    if len(players) == 0:
-        print("No players")
-        return
-    
-    board.players = players
-    board.curr_player = players[board.curr_player_idx]
-    
-    for player in players:
-        player.board = board
-
-def play(board: 'Board', players: list['player']):
-    """
-    simulates a simple game loop between any 2 players
-
-    Args:
-        board (Board): the board that the game is played on
-        players (list[player]): the players playing the game
-    """
-    bind(board, players)
-    while board.state == gameState.ONGOING:
-        move = board.curr_player.get_move()
-        if move is None:
-            print("Invalid move")
-            return
-        board.make_move(move)
-        
-    if board.state == gameState.ENDED:
-        print(f"Winner: {board.winner.name}")
-        print(f"Reward: {board.reward}")
-    else:
-        print("Draw")
         
 class gameState(Enum):
     """
     Enum to represent the state of the game
     
     Attributes:
+    -----------
         ENDED: the game has ended
         DRAW: the game ended in a draw
         ONGOING: the game is still ongoing
@@ -126,24 +58,68 @@ class gameState(Enum):
     ENDED = 'E'
     DRAW = 'D'
     ONGOING = 'P'
+    
+class Piece(ABC):
+    """
+    Abstract pieace class
+        
+    Attributes:
+        * name (str): string representation of the piece
+        * player (player): player that owns the piece
+        * location (tuple[int]): location of the piece on the board
+    """
+    name: str
+    player: 'player'
+    location: tuple[int]
+    
+    def __init__(self, name: str, player: 'player', location: tuple[int]) -> None:
+        self.player = player
+        self.name = name
+        self.location = location
+        
+    def __eq__(self, other: 'Piece' | 'player' | str) -> bool:
+        if isinstance(other, Piece):
+            return self.name == other.name
+        elif isinstance(other, player):
+            return self.player == other.name
+        elif isinstance(other, str):
+            return self.name == other
+            
+        elif type(other) is str:
+            return self.name == other
+        
+    def __str__(self) -> str:
+        return self.name
+    
+    def __repr__(self) -> str:
+        return str(self)
+    
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.name = self.name
+        result.player = self.player
+        result.location = copy(self.location)
+        return result
 
 class Move(ABC):
     """
     Abstract move class
     
     Attributes:
-        name (str): String representation of the move
-        reward (float): optional reward for the move(if known). 0 by default.
-        player (player): optional player that made the move. None by default. (usualy not needed as board holds curr_player)
+    -----------
+        * name (str): String representation of the move
+        * reward (float): optional reward for the move(if known). 0 by default.
+        * player (player): optional player that made the move. None by default. (usualy not needed as board holds curr_player)
     """
-    name: str = ""
+    name: str
     reward: float = 0
-    player: 'player' = None
+    piece: Piece
     
-    def __init__(self, name: str, player: 'player' = None) -> None:
+    def __init__(self, name: str, player: 'player' = None, reward: float = 0) -> None:
         super(Move, self).__init__()
         self.name = name.replace(" ", "") # clean move name
-        self.reward = 0
+        self.reward = reward
         
     def __eq__(self, __value: "Move") -> bool:
         return self.name == __value.name
@@ -159,7 +135,8 @@ class Board(ABC):
     Abstract board class
     
     Attributes:
-        * board (np.ndarray[str]): holds visualization of the board - init to ' '\n
+    -----------
+        * board (np.ndarray[Piece]): holds visualization of the board - init to ' '\n
         * legal_moves (list[Move]): the legal moves for the current player with respect to the board - requires initialization\n
         * players (list[player]): the players playing the game - provided by the user\n
         * state (gameState): the current state of the game - init to ONGOING\n
@@ -170,6 +147,7 @@ class Board(ABC):
         * history (list[Move]): the history of moves played - init to []\n
         
     Methods provided:
+    -----------------
     
         * is_legal_move(self, move: Move) -> bool:\n
             checks if the move is in legal_moves\n
@@ -198,6 +176,8 @@ class Board(ABC):
             updates the state of the game to ENDED and sets the winner to other player\n
             
     Method to override:
+    -------------------
+    
         * create_move(self, move: Move) -> None:\n
             makes a move on the board and updates the state of the game accordingly\n
             
@@ -233,15 +213,90 @@ class Board(ABC):
         self.curr_player_idx = 0
         if len(players) > 0:
             self.curr_player = players[0]
+            
+    @abstractmethod
+    def create_move(self, input: str) -> Move:
+        """
+        function to be implemented by a child class
+        creates a move from input of the specific child class
+
+        Args:
+        -----
+            * input (str): A string encoding of the move
+
+        Returns:
+        --------
+            Move: a move object of the specific child class
+        """
+        pass        
+    
+    @abstractmethod
+    def update_state(self, move: Move) -> float:
+        """
+        function to be implemented by a child class
+        updates self object after a move is made
+        
+        Args:
+        -----
+            * move (Move): the move being made
+        
+        Required Effects:
+        -----------------
+            * self.board - update board matrix visuals\n
+            * self.legal_moves - update legal moves according to your game\n
+            * self.reward - update the total reward from this game\n
+            * self.state - is the game over?\n
+            * self.winner - if the game is over - update winner\n
+            
+        Returns:
+        --------
+            the reward for the move
+        """
+        pass
+    
+    @abstractmethod
+    def reverse_state(self, move: Move):
+        """
+        function to be implemented by a child class
+        this function is the reverse of update_state.
+        
+        Args:
+        -----
+            * move (Move): the move that was made last
+        
+        Required Effects:
+        -----------------
+            * self.board - reverse board matrix visuals\n
+            * self.legal_moves - reverse legal moves according to your game\n
+            * self.reward - reverse the total reward from this game\n
+            
+        Returns:
+        --------
+            the imidiate reward for making the move
+        """
+        pass
+    
+    def alert_players(self, move: Move):
+        """
+        informs all players of a move being made
+        
+        Args:
+        -----
+            * move (Move): the move being made
+        """
+        for player in self.players:
+            player.move(move)    
         
     def is_legal_move(self, move: Move) -> bool:
         """
         checks if the move is in legal_moves
 
         Args:
-            move (Move): the move to search for
+        -----
+            * move (Move): the move to search for
 
         Returns:
+        --------
             bool: True if the move is in legal_moves, False otherwise
         """
         return move in self.legal_moves
@@ -266,6 +321,7 @@ class Board(ABC):
         """
         self.history.append(move)
         self.update_state(move)
+        self.alert_players()
         self.next_player()
     
     def unmake_move(self, move: Move = None):
@@ -275,57 +331,6 @@ class Board(ABC):
         move = self.history.pop()
         self.reverse_state(move)
         self.prev_player()
-        
-    @abstractmethod
-    def create_move(self, input: str) -> Move:
-        """
-        function to be implemented by a child class, to create a move from input of the specific child class
-
-        Args:
-            input (str): A string encoding of the move
-
-        Returns:
-            Move: a move object of the specific child class
-        """
-        pass        
-    
-    @abstractmethod
-    def update_state(self, move: Move) -> float:
-        """
-        updates self object after a move is made
-        
-        Args:
-            move (Move): the move being made
-        
-        Required Effects:
-            self.board - update board matrix visuals\n
-            self.legal_moves - update legal moves according to your game\n
-            self.reward - update the total reward from this game\n
-            self.state - is the game over?\n
-            self.winner - if the game is over - update winner\n
-            
-        Returns:
-            the reward for the move
-        """
-        pass
-    
-    @abstractmethod
-    def reverse_state(self, move: Move):
-        """
-        this function is the reverse of update_state.
-        
-        Args:
-            move (Move): the move that was made last
-        
-        Required Effects:
-            self.board - reverse board matrix visuals\n
-            self.legal_moves - reverse legal moves according to your game\n
-            self.reward - reverse the total reward from this game\n
-            
-        Returns:
-            the reward for the move
-        """
-        pass
     
     # encodes the board to a numpy array. mainly useful for neural network models
     def encode(self) -> np.ndarray:
@@ -333,6 +338,7 @@ class Board(ABC):
         encodes the board to a numpy array for use of neural network models
         
         defualt encoding:
+        -----------------
             - layer for each pieace, ordered by player\n
             - layer for empty spaces\n
         """
@@ -343,18 +349,24 @@ class Board(ABC):
         return enc.astype(np.float32)
     
     def win(self):
-        # TODO: add descrition
+        """
+        turns the game to a win for the current player
+        """
         self.state = gameState.ENDED
         self.winner = self.curr_player
         self.reward = 1
         
     def draw(self):
-        # TODO: add descrition
+        """
+        turns the game to a draw
+        """
         self.state = gameState.DRAW
         self.reward = 0
         
     def lose(self):
-        # TODO: add descrition
+        """
+        turns the game to a loss for the current player
+        """
         self.state = gameState.ENDED
         self.winner = self.players[self.curr_player_idx - 1]
         self.reward = -1
@@ -370,9 +382,11 @@ class Board(ABC):
         hash function for moves
 
         Args:
-            move (Move): the move to be hashed
+        -----
+            * move (Move): the move to be hashed
 
         Returns:
+        --------
             int: the first intiger in the move name
         """
         return int(move.name)
@@ -396,3 +410,46 @@ class Board(ABC):
         result.winner = self.winner
         
         return result
+    
+def bind(board: 'Board', players: list['player']):
+    """
+    binds board and players to each other
+    couses each side to hold a reference to the other
+
+    Args:
+    -----
+        * board (Board): the board to be played
+        * players (list[player]): the players playing the game
+    """
+    if len(players) == 0:
+        print("No players")
+        return
+    
+    board.players = players
+    board.curr_player = players[board.curr_player_idx]
+    
+    for player in players:
+        player.board = board
+
+def play(board: 'Board', players: list['player']):
+    """
+    simulates a simple game loop between any 2 players
+
+    Args:
+    -----
+        * board (Board): the board that the game is played on
+        * players (list[player]): the players playing the game
+    """
+    bind(board, players)
+    while board.state == gameState.ONGOING:
+        move = board.curr_player.get_move()
+        if move is None:
+            print("Invalid move")
+            return
+        board.make_move(move)
+        
+    if board.state == gameState.ENDED:
+        print(f"Winner: {board.winner.name}")
+        print(f"Reward: {board.reward}")
+    else:
+        print("Draw")
