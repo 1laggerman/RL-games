@@ -150,6 +150,8 @@ class TreePlayer(player, ABC):
                 self.start_node = self.root
         
         self.calc_best_move()
+        for move, node in self.root.children:
+            print(move, ': ', node.eval, ' / ', node.visits)
         return self.best()[0]
         
     def calc_best_move(self):
@@ -165,7 +167,7 @@ class TreePlayer(player, ABC):
         start_time = time.time()
         
         while len(self.root.untried_actions) > 0:
-            board = self.board
+            board = deepcopy(self.board)
             (move, node) = self.root.expand(board)
             board.make_move(move)
             ev = node.evaluate(board)

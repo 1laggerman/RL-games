@@ -65,10 +65,13 @@ class MCTS_uct_Node(Node):
             board.make_move(board.legal_moves[move_idx])
         
         if board.state == gameState.DRAW:
-            return 0.5
+            board.draw()
         elif board.winner == self.player:
-            return 1
-        return 0
+            board.win()
+        else:
+            board.lose()
+            
+        return board.reward
     
 class MCTS_uct_Tree(TreePlayer):
     """
@@ -83,7 +86,8 @@ class MCTS_uct_Tree(TreePlayer):
         super(MCTS_uct_Tree, self).__init__(game_board, name)
         
     def best(self):
-        return min(self.root.children, key=lambda c: c[1].eval / c[1].visits if c[1].visits > 0 else 0)
+        return max(self.root.children, key=lambda c: c[1].visits if c[1].visits > 0 else 0)
+        # return min(self.root.children, key=lambda c: c[1].eval / c[1].visits if c[1].visits > 0 else 0)
     
     def create_node(self, state: Board, parent: Node = None) -> Node:
         return MCTS_uct_Node(state, parent)
