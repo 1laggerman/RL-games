@@ -77,7 +77,7 @@ class Piece(ABC):
         self.name = name
         self.location = location
         
-    def __eq__(self, other: 'Piece' | 'player' | str) -> bool:
+    def __eq__(self, other) -> bool:
         if isinstance(other, Piece):
             return self.name == other.name
         elif isinstance(other, player):
@@ -153,6 +153,9 @@ class Board(ABC):
             checks if the move is in legal_moves\n
             you may want to override __eq__ for Move for more accurate performance\n
     
+        * alert_players(self, move: Move) -> None\n
+            informs the players of the move\n
+            
         * make_move(self, move: Move) -> None:\n
             adds the move to history, calls update_state, and updates curr_player\n
             
@@ -170,10 +173,13 @@ class Board(ABC):
             defualt encodes by layer for each pieace and a legal_moves layer\n
             
         * win(self, player: player) -> None:\n
-            updates the state of the game to ENDED and sets the winner to player\n
+            updates the state of the game to ENDED and sets the winner to player and reward 1\n
             
         * lose(self, player: player) -> None:\n
-            updates the state of the game to ENDED and sets the winner to other player\n
+            updates the state of the game to ENDED and sets the winner to other player and reward -1\n
+            
+        * draw(self) -> None:\n
+            updates the state of the game to ENDED and sets the winner to None and reward 0\n
             
     Method to override:
     -------------------
@@ -181,7 +187,7 @@ class Board(ABC):
         * create_move(self, move: Move) -> None:\n
             makes a move on the board and updates the state of the game accordingly\n
             
-        * update_state(self) -> None:\n
+        * update_state(self, move: Move) -> None:\n
             updates the state of the game based on the current board\n
             
         * reverse_state(self, move: Move) -> None:\n
@@ -250,7 +256,7 @@ class Board(ABC):
             
         Returns:
         --------
-            the reward for the move
+            the imidiate reward for the move
         """
         pass
     
@@ -269,10 +275,6 @@ class Board(ABC):
             * self.board - reverse board matrix visuals\n
             * self.legal_moves - reverse legal moves according to your game\n
             * self.reward - reverse the total reward from this game\n
-            
-        Returns:
-        --------
-            the imidiate reward for making the move
         """
         pass
     
@@ -321,7 +323,6 @@ class Board(ABC):
         """
         self.history.append(move)
         self.update_state(move)
-        self.alert_players()
         self.next_player()
     
     def unmake_move(self, move: Move = None):
@@ -447,9 +448,11 @@ def play(board: 'Board', players: list['player']):
             print("Invalid move")
             return
         board.make_move(move)
+        board.alert_players(move)
         
     if board.state == gameState.ENDED:
         print(f"Winner: {board.winner.name}")
         print(f"Reward: {board.reward}")
     else:
         print("Draw")
+        

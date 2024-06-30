@@ -8,22 +8,18 @@ import numpy as np
 from typing import Any
 # from package.gameplay.play import play
 
-
 # move = TicTacToe_move("0, 0")
 # print(move)
 # board = TicTacToe_Board((3, 3), players=[player(None, "O"), player(None, "X")])
 
-# p1 = humanPlayer(None, "X")
-# players = [p1, p2]
+board = TicTacToe_Board((3, 3))
 
-# board = TicTacToe_Board((3, 3))
+p1 = MCTS_uct_Tree(board, "X")
+p2 = humanPlayer(board, "O")
 
-# p1 = MCTS_uct_Tree(board, "X")
-# p2 = humanPlayer(board, "O")
+players = [p1, p2]
 
-# players = [p1, p2]
-
-# play(board=board, players=players)
+play(board=board, players=players)
 
 # start = time.time()
 

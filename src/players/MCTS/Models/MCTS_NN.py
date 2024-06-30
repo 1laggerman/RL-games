@@ -12,18 +12,19 @@ import matplotlib.pyplot as plt
 from torchmetrics.classification import confusion_matrix, accuracy
 
 class MCTS_NN_Node(Node):
-    policy: np.ndarray
-    prob: float
+    policy: np.ndarray[float]
+    self_prob: float
     
-    def __init__(self, board: Board, net: torch.nn.Module, parent: "MCTS_NN_Node" = None, prob: float = 0) -> None:
-        super(MCTS_NN_Node, self).__init__(untried_actions=board.legal_moves, player=board.curr_player, parent=parent)
+    def __init__(self, state: Board, net: torch.nn.Module, parent: "MCTS_NN_Node" = None, prob: float = 0) -> None:
+        super(MCTS_NN_Node, self).__init__(state, parent=parent)
         self.net: BaseRenset = net
         self.tree_eval = 0
         self.final_eval = 0
-        self.prob = prob
+        self.self_prob = prob
         self.visits = 1
-        with torch.no_grad():
-            self.eval, self.policy = self.evaluate(board)
+        if state is not None:    
+            with torch.no_grad():
+                self.eval, self.policy = self.evaluate(state)
         
       
     def select_child(self):
@@ -132,14 +133,16 @@ class MCTS_NN_Tree(TreePlayer):
         self.opt = torch.optim.Adam(self.net.parameters(), lr=0.001, betas=(0.9, 0.999), weight_decay=0.4)
         with torch.no_grad():
             self.net.apply(init_weights)
-        self.root = MCTS_NN_Node(board=game_board, net=self.net, prob=1)
-        self.root.visits = 1
+        
         
     def best(self):
         if self.board.curr_player_idx == 0:
             return max(self.root.children, key=lambda c: c[1].eval / c[1].visits)
         else:
             return min(self.root.children, key=lambda c: c[1].eval / c[1].visits)
+        
+    def create_node(self, state: Board, parent: Node = None) -> Node:
+        return MCTS_NN_Node(state, parent=parent, net=self.net)
         
     def static_train(self, epochs: int, X_train: np.ndarray, Y_train: np.ndarray, save_to: str, save_as: str = "net"):
         losses = []

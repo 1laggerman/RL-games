@@ -16,8 +16,8 @@ class MCTS_uct_Node(Node):
         * evaluate(board: Board): Evaluate the node using a random game simulation
     """
     
-    def __init__(self, untried_actions: list[Move], player: player, parent: "MCTS_uct_Node" = None) -> None:
-        super(MCTS_uct_Node, self).__init__(untried_actions=untried_actions, player=player, parent=parent)
+    def __init__(self, state: Board, parent: "MCTS_uct_Node" = None) -> None:
+        super(MCTS_uct_Node, self).__init__(state, parent=parent)
     
     def select_child(self):
         
@@ -46,7 +46,7 @@ class MCTS_uct_Node(Node):
             new_action = self.untried_actions.pop()
         
         board.make_move(new_action)
-        new_Node = MCTS_uct_Node(copy.deepcopy(board.legal_moves), board.curr_player, self)
+        new_Node = MCTS_uct_Node(state=board, parent=self)
         if board.state == gameState.ENDED or board.state == gameState.DRAW:
             new_Node.is_leaf = True
             board.next_player()
@@ -81,11 +81,10 @@ class MCTS_uct_Tree(TreePlayer):
     
     def __init__(self, game_board: Board, name: str) -> None:
         super(MCTS_uct_Tree, self).__init__(game_board, name)
-        # self.root = MCTS_uct_Node(copy.deepcopy(game_board.legal_moves), player=game_board.curr_player)
         
     def best(self):
         return min(self.root.children, key=lambda c: c[1].eval / c[1].visits if c[1].visits > 0 else 0)
     
-    def create_node(self, untried_actions: list[Move], player: player, parent: Node = None) -> Node:
-        return MCTS_uct_Node(untried_actions, player, parent)
+    def create_node(self, state: Board, parent: Node = None) -> Node:
+        return MCTS_uct_Node(state, parent)
 

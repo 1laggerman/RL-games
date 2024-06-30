@@ -20,7 +20,7 @@ class Node(ABC):
         * is_leaf (bool): Whether this node represents a game that has ended
         
     Methods provided by the abstract class:
-        * backpropagate(ev: float): Backpropagate the evaluation to the parent node
+        * backpropagate(ev: float) -> None: Backpropagate the evaluation to the parent node
         
     Methods to be implemented by a child class:
         * select_child(): Select the child node to explore
@@ -35,13 +35,13 @@ class Node(ABC):
     untried_actions: list[Move]
     is_leaf: bool = False
     
-    def __init__(self, untried_actions: list[Move], player: 'player', parent: "Node" = None) -> None:
+    def __init__(self, state: Board, parent: "Node" = None) -> None:
         self.visits = 0
         self.eval = 0
         self.parent = parent
         self.children = list()
-        self.player = player
-        self.untried_actions = deepcopy(untried_actions)
+        self.player = state.curr_player
+        self.untried_actions = state.legal_moves.copy()
         self.is_leaf = False
         if len(self.untried_actions) == 0:
             self.is_leaf = True
@@ -131,16 +131,23 @@ class TreePlayer(player, ABC):
     
     def __init__(self, game_board: Board, name: str, search_iters: int = 1000, search_time: float = float('inf'), max_depth: int = -1) -> None:
         super(TreePlayer, self).__init__(game_board, name)
-        # self.root = None
-        self.start_node = self.create_node(game_board.legal_moves, player=game_board.curr_player)
-        self.root = self.start_node
+        self.search_iters = search_iters
+        self.search_time = search_time
+        self.max_depth = max_depth
+        self.start_node = None
+        self.root = None
+        self.board = game_board
         
     def get_move(self):
         """
         searches the tree by calling calc_best_move and returns the best move
         """
         if self.root == None:
-            self.root = self.create_node(self.board.legal_moves, player=self.board.curr_player, parent=None)
+            if self.board is None:
+                raise ValueError("Board not set")
+            self.root = self.create_node(state=self.board, parent=None)
+            if self.start_node == None:
+                self.start_node = self.root
         
         self.calc_best_move()
         return self.best()[0]
@@ -158,11 +165,11 @@ class TreePlayer(player, ABC):
         start_time = time.time()
         
         while len(self.root.untried_actions) > 0:
-            board = deepcopy(self.board)
+            board = self.board
             (move, node) = self.root.expand(board)
             board.make_move(move)
             ev = node.evaluate(board)
-            # self.board.unmake_move()
+            board.unmake_move()
             node.backpropagate(ev)
             self.search_iters -= 1
         
@@ -243,7 +250,8 @@ class TreePlayer(player, ABC):
         pass
 
     @abstractmethod
-    def create_node(self, untried_actions: list[Move], player: player, parent: Node = None) -> Node:
+    def create_node(self, state: Board, parent: Node = None) -> Node:
+        # TODO: refactor the change to use Board instead
         """
         function to be implemented by a child class
         creates a new node with the given parameters (to make easier implementing a child class)
