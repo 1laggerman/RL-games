@@ -26,6 +26,7 @@ class Node(ABC):
         * select_child(): Select the child node to explore
         * expand(board: Board, move: Move = None): Expand the tree by creating a new child node
         * evaluate(board: Board): Evaluate the node
+        * update_rule(eval: float) -> None: updates the eval after receiving a n eval from a descendant Node
     """
     visits: int = 0
     eval: float = 0
@@ -79,21 +80,25 @@ class Node(ABC):
             * move (Move, optional): The move to be explored. Defaults to None.
         """
         pass
-        
-    def backpropagate(self, eval: float):
+
+    @abstractmethod
+    def update_rule(self, new_eval: float):
+        pass
+           
+    def backpropagate(self, eval: float, stop_at: 'Node' = None):
         """
         backpropagates the evaluation to all ancestors of this node
+        calls method update_rule to update the rule
         
         Args:
-            * eval (float): The evaluation of the node, expected to be in the range [-1, 1].\n
+            * eval (float): The evaluation to backpropagate.\n
             override to get a different behaviour if needed
         """
         self.visits += 1
-        
-        self.eval += eval
-        
-        if self.parent:
-            self.parent.backpropagate(-eval)
+        self.update_rule(eval)
+
+        if self.parent != stop_at and self.parent is not None:
+            self.parent.backpropagate(eval)
             
     def __str__(self) -> str:
         return str(self.eval)
@@ -184,13 +189,10 @@ class TreePlayer(player, ABC):
             board = self.board
             depth = 0
             
-            t1 = time.time()
             while len(node.untried_actions) == 0 and not node.is_terminal:
                 (move, node) = node.select_child()
                 board.make_move(move)
                 depth += 1
-            
-            t2 = time.time()
             
             ev = 0
             if not node.is_terminal:
@@ -202,27 +204,16 @@ class TreePlayer(player, ABC):
             if node.is_terminal:
                 pass
                     
-            t3 = time.time()
             ev = node.evaluate(board)
             
-            t4 = time.time()
             for d in range(depth):
                 self.board.unmake_move()
             
             node.backpropagate(ev)
             if depth > max_d:
                 max_d = depth
-                
-            t5 = time.time()
-            
-            # print("deepcopy time: ", t1 - t0)
-            # print("find node time: ", t2 - t1)
-            # print("expand node time: ", t3 - t2)
-            # print("eval node time: ", t4 - t3)
-            # print("backpropagate node time: ", t5 - t4)
             
             flag_time = time.time()
-            
             if flag_time - start_time > self.search_time:
                 break
     

@@ -81,7 +81,7 @@ class Piece(ABC):
         if isinstance(other, Piece):
             return self.name == other.name
         elif isinstance(other, player):
-            return self.player == other.name
+            return self.player.name == other.name
         elif isinstance(other, str):
             return self.name == other
             
@@ -111,8 +111,12 @@ class Move(ABC):
         * name (str): String representation of the move
         * reward (float): optional reward for the move(if known). 0 by default.
         * player (player): optional player that made the move. None by default. (usualy not needed as board holds curr_player)
+        * src_location: tuple[int]: the square where the piece is moved from
+        * dest_location: tuple[int]: the square where the piece is moved to
     """
     name: str
+    src_location: tuple[int]
+    dest_location: tuple[int]
     reward: float = 0
     piece: Piece
     
@@ -345,7 +349,7 @@ class Board(ABC):
         """
         board = deepcopy(self.board)
         player_states = np.array([board == player for player in self.players])
-        empty_state = self.board == ' '
+        empty_state = self.board == None
         enc: np.ndarray = np.concatenate([player_states, empty_state.reshape((1, *empty_state.shape))])
         return enc.astype(np.float32)
     
@@ -371,13 +375,7 @@ class Board(ABC):
         self.state = gameState.ENDED
         self.winner = self.players[self.curr_player_idx - 1]
         self.reward = -1
-    
-    def __str__(self):
-        return str(self.board)
-    
-    def __repr__(self) -> str:
-        return str(self)
-    
+
     def map_move(self, move: Move) -> int:
         """
         hash function for moves
@@ -388,10 +386,15 @@ class Board(ABC):
 
         Returns:
         --------
-            int: the first intiger in the move name
+            mapping of each move according to the unravled index of the destination square of the move
         """
-        return int(move.name)
+        return np.ravel_multi_index(move.dest_location, self.board.shape)
     
+    def __str__(self):
+        return str(self.board)
+    
+    def __repr__(self) -> str:
+        return str(self)
     
     def __deepcopy__(self, memo):
         

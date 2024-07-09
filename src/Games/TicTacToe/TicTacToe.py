@@ -8,16 +8,14 @@ class TicTacToe_move(Move):
         * location (tuple[int, int]): The location of the move on the board.
         * name (str): The name of the move. format: "x,y"
     """
-    location: tuple[int, int]
         
     def __init__(self, name: str) -> None:
         super(TicTacToe_move, self).__init__(name)
         locs = name.split(",")
-        self.location = (int(locs[0]), int(locs[1]))
-        # self.location[1] = int(locs[1])
+        self.dest_location = (int(locs[0]), int(locs[1]))
         
     def __eq__(self, __value: 'TicTacToe_move') -> bool:
-        return self.location[0] == __value.location[0] and self.location[1] == __value.location[1]
+        return self.dest_location[0] == __value.dest_location[0] and self.dest_location[1] == __value.dest_location[1]
         
 
 class TicTacToe_Board(Board):

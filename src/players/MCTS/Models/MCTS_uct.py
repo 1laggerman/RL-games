@@ -72,6 +72,9 @@ class MCTS_uct_Node(Node):
             
         return board.reward
     
+    def update_rule(self, decendent_eval: float):
+        self.eval += decendent_eval
+    
 class MCTS_uct_Tree(TreePlayer):
     """
     A tree player using the uct algorithm

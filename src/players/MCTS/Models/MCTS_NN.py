@@ -95,7 +95,7 @@ class MCTS_NN_Node(Node):
         
         # print(value.squeeze(0).detach().cpu().numpy()[0])
         policy = policy.squeeze(0).detach().cpu().numpy()
-        legal = np.where(board.board == ' ', 1, 0).flatten()
+        legal = np.where(board.board == None, 1, 0).flatten()
         policy *= legal
         s = np.sum(policy)
         if s > 0:
