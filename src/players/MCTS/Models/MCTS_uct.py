@@ -3,7 +3,7 @@ from src.players.MCTS.Treeplayer import Node, TreePlayer
 
 import random
 import math
-import copy
+from copy import deepcopy, copy
 
 
 class MCTS_uct_Node(Node):
@@ -30,7 +30,7 @@ class MCTS_uct_Node(Node):
         best_child = None
         for child in self.children:
             # exploiting 1 - (wins / visits) because the child node is a different player
-            exploitation = (child[1].visits - child[1].eval) / child[1].visits if child[1].visits > 0 else 0
+            exploitation = (- child[1].eval) / child[1].visits if child[1].visits > 0 else 0
             exploration = math.sqrt(math.log(self.visits) / (1 + child[1].visits))
             uct_score = exploitation + C * exploration
 
@@ -48,10 +48,8 @@ class MCTS_uct_Node(Node):
         board.make_move(new_action)
         new_Node = MCTS_uct_Node(state=board, parent=self)
         if board.state == gameState.ENDED or board.state == gameState.DRAW:
-            new_Node.is_leaf = True
-            board.next_player()
+            new_Node.is_terminal = True
             new_Node.player = board.curr_player
-            board.prev_player()
         
         board.unmake_move()
         new_child = (new_action, new_Node)
@@ -59,6 +57,7 @@ class MCTS_uct_Node(Node):
         return new_child
         
     def evaluate(self, board: Board):
+        board = deepcopy(board)
         while board.state is not gameState.DRAW and board.state is not gameState.ENDED:
             choices = [i for i in range(board.legal_moves.__len__())]
             move_idx = random.choice(choices)

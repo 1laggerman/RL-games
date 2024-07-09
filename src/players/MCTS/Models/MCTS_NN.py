@@ -80,7 +80,7 @@ class MCTS_NN_Node(Node):
                     print("start debugging")
                 new_Node = MCTS_NN_Node(b, net=self.net, parent=self, prob=prob)
                 if b.state == gameState.ENDED or b.state == gameState.DRAW:
-                    new_Node.is_leaf = True
+                    new_Node.is_terminal = True
                 new_child = (move, new_Node)
                 self.children.append(new_child)
                 
@@ -300,12 +300,12 @@ class MCTS_NN_Tree(TreePlayer):
             running_node = node
             running_board = deepcopy(board)
             depth = 0
-            while len(running_node.untried_actions) == 0 and not running_node.is_leaf:
+            while len(running_node.untried_actions) == 0 and not running_node.is_terminal:
                 (move, running_node) = running_node.select_child()
                 running_board.make_move(move)
                 depth += 1
             
-            if not running_node.is_leaf:
+            if not running_node.is_terminal:
                 if max_depth <= 1 or depth + 1 < max_depth:
                     (move, running_node) = running_node.expand(running_board)
                     running_board.make_move(move)
