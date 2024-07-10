@@ -1,1 +1,1 @@
-from .base import player, gameState, Move, Board, play, Piece
+from .base import player, gameState, Move, Game, play, Piece

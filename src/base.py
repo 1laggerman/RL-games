@@ -17,11 +17,11 @@ class player(ABC):
         get_move(self) -> Move
         move(self, move: Move) -> None
     """
-    board: 'Board'
+    board: 'Game'
     name: str
     pieces: list['Piece']
     
-    def __init__(self, game_board: 'Board', name: str) -> None:
+    def __init__(self, game_board: 'Game', name: str) -> None:
         self.board = game_board
         self.name = name
 
@@ -134,13 +134,13 @@ class Move(ABC):
     def __repr__(self):
         return str(self)
 
-class Board(ABC):
+class Game(ABC):
     """
-    Abstract board class
+    Abstract Game class
     
     Attributes:
     -----------
-        * board (np.ndarray[Piece]): holds visualization of the board - init to ' '\n
+        * board (np.ndarray[Piece]): holds visualization of the board - init to None pieces\n
         * legal_moves (list[Move]): the legal moves for the current player with respect to the board - requires initialization\n
         * players (list[player]): the players playing the game - provided by the user\n
         * state (gameState): the current state of the game - init to ONGOING\n
@@ -337,7 +337,6 @@ class Board(ABC):
         self.reverse_state(move)
         self.prev_player()
     
-    # encodes the board to a numpy array. mainly useful for neural network models
     def encode(self) -> np.ndarray:
         """
         encodes the board to a numpy array for use of neural network models
@@ -415,9 +414,9 @@ class Board(ABC):
         
         return result
     
-def bind(board: 'Board', players: list['player']):
+def bind(game: 'Game', players: list['player']):
     """
-    binds board and players to each other
+    binds game and players to each other
     couses each side to hold a reference to the other
 
     Args:
@@ -429,33 +428,33 @@ def bind(board: 'Board', players: list['player']):
         print("No players")
         return
     
-    board.players = players
-    board.curr_player = players[board.curr_player_idx]
+    game.players = players
+    game.curr_player = players[game.curr_player_idx]
     
     for player in players:
-        player.board = board
+        player.board = game
 
-def play(board: 'Board', players: list['player']):
+def play(game: 'Game', players: list['player']):
     """
     simulates a simple game loop between any 2 players
 
     Args:
     -----
-        * board (Board): the board that the game is played on
+        * game (Game): the game that is being played
         * players (list[player]): the players playing the game
     """
-    bind(board, players)
-    while board.state == gameState.ONGOING:
-        move = board.curr_player.get_move()
+    bind(game, players)
+    while game.state == gameState.ONGOING:
+        move = game.curr_player.get_move()
         if move is None:
             print("Invalid move")
             return
-        board.make_move(move)
-        board.alert_players(move)
+        game.make_move(move)
+        game.alert_players(move)
         
-    if board.state == gameState.ENDED:
-        print(f"Winner: {board.winner.name}")
-        print(f"Reward: {board.reward}")
+    if game.state == gameState.ENDED:
+        print(f"Winner: {game.winner.name}")
+        print(f"Reward: {game.reward}")
     else:
         print("Draw")
         

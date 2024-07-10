@@ -1,11 +1,11 @@
 import torch
-from src.base import Board
+from src.base import Game
 import torch.nn.functional as F
 
 torch.manual_seed(0)
 
 class BaseRenset(torch.nn.Module):
-    def __init__(self, board: Board, num_resblocks: int, num_hidden: int) -> None:
+    def __init__(self, board: Game, num_resblocks: int, num_hidden: int) -> None:
         super().__init__()
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         

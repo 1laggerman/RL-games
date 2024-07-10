@@ -1,4 +1,4 @@
-from src.base import Move, Board, gameState, player
+from src.base import Move, Game, gameState, player
 
 import random
 import math
@@ -24,8 +24,8 @@ class Node(ABC):
         
     Methods to be implemented by a child class:
         * select_child(): Select the child node to explore
-        * expand(board: Board, move: Move = None): Expand the tree by creating a new child node
-        * evaluate(board: Board): Evaluate the node
+        * expand(game: Game, move: Move = None): Expand the tree by creating a new child node
+        * evaluate(game: Game): Evaluate the node
         * update_rule(eval: float) -> None: updates the eval after receiving a n eval from a descendant Node
     """
     visits: int = 0
@@ -36,7 +36,7 @@ class Node(ABC):
     untried_actions: list[Move]
     is_terminal: bool = False
     
-    def __init__(self, state: Board, parent: "Node" = None) -> None:
+    def __init__(self, state: Game, parent: "Node" = None) -> None:
         self.untried_actions = state.legal_moves.copy()
         self.visits = 0
         self.eval = 0
@@ -56,13 +56,13 @@ class Node(ABC):
         pass
     
     @abstractmethod
-    def evaluate(self, board: Board) -> float:
+    def evaluate(self, game: Game) -> float:
         """
         function to be implemented by a child class
         evaluates the current node, with respect to player
         
         Args:
-            * board (Board): The current game state
+            * game (Game): The current game state
             
         returns:
             * float: The evaluation of the node
@@ -70,13 +70,13 @@ class Node(ABC):
         pass
             
     @abstractmethod
-    def expand(self, board: Board, move: Move = None) -> tuple[Move, "Node"]:
+    def expand(self, game: Game, move: Move = None) -> tuple[Move, "Node"]:
         """
         function to be implemented by a child class
         expands the tree by adding child node(or nodes) to this node
         
         Args:
-            * board (Board): The current game state
+            * game (Game): The current game state
             * move (Move, optional): The move to be explored. Defaults to None.
         """
         pass
@@ -113,7 +113,7 @@ class TreePlayer(player, ABC):
     Attributes:
         * start_node (Node): The absolute root of the tree, from which all other nodes are descendants
         * root (Node): The current root of the tree, set to the current game state node
-        * board (Board): reference to the game board
+        * game (Game): reference to the game board
         * search_iters (int): The max number of iterations to search the tree for (set to 1000 by default)
         * search_time (float): The max time to search the tree for (set to infinity by default)
         * max_depth (int): The max depth to search the tree for (set to -1 for unlimited depth)
@@ -129,12 +129,12 @@ class TreePlayer(player, ABC):
     """
     start_node: Node
     root: Node
-    board: Board
+    board: Game
     search_iters: int
     search_time: float
     max_depth: int
     
-    def __init__(self, game_board: Board, name: str, search_iters: int = 1000, search_time: float = float('inf'), max_depth: int = -1) -> None:
+    def __init__(self, game_board: Game, name: str, search_iters: int = 1000, search_time: float = float('inf'), max_depth: int = -1) -> None:
         super(TreePlayer, self).__init__(game_board, name)
         self.search_iters = search_iters
         self.search_time = search_time
@@ -247,7 +247,7 @@ class TreePlayer(player, ABC):
         pass
 
     @abstractmethod
-    def create_node(self, state: Board, parent: Node = None) -> Node:
+    def create_node(self, state: Game, parent: Node = None) -> Node:
         # TODO: refactor the change to use Board instead
         """
         function to be implemented by a child class

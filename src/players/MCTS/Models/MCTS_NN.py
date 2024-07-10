@@ -1,4 +1,4 @@
-from src.base import Move, Board, gameState
+from src.base import Move, Game, gameState
 from src.players.MCTS.Treeplayer import Node, TreePlayer
 from src.players.MCTS.Models.ML_architecture.resnet import BaseRenset
 
@@ -15,7 +15,7 @@ class MCTS_NN_Node(Node):
     policy: np.ndarray[float]
     self_prob: float
     
-    def __init__(self, state: Board, net: torch.nn.Module, parent: "MCTS_NN_Node" = None, prob: float = 0) -> None:
+    def __init__(self, state: Game, net: torch.nn.Module, parent: "MCTS_NN_Node" = None, prob: float = 0) -> None:
         super(MCTS_NN_Node, self).__init__(state, parent=parent)
         self.net: BaseRenset = net
         self.tree_eval = 0
@@ -70,7 +70,7 @@ class MCTS_NN_Node(Node):
     
     
     # TODO: make sure node is not leaf by refrence
-    def expand(self, board: Board) -> None:
+    def expand(self, board: Game) -> None:
         for move in self.untried_actions:
             prob = self.policy[board.map_move(move)]
             if prob > 0:
@@ -88,7 +88,7 @@ class MCTS_NN_Node(Node):
         
         return random.choices(self.children, weights=self.policy[self.policy > 0], k=1)[0]
         
-    def evaluate(self, board: Board) -> tuple[torch.Tensor, torch.Tensor]:
+    def evaluate(self, board: Game) -> tuple[torch.Tensor, torch.Tensor]:
         value, policy = self.net.forward(torch.Tensor(board.encode()).unsqueeze(0).to(self.net.device))
         if self.player == board.players[1]:
             value = 1 - value
@@ -125,7 +125,7 @@ class MCTS_NN_Node(Node):
 class MCTS_NN_Tree(TreePlayer):
     root: MCTS_NN_Node
     
-    def __init__(self, game_board: Board) -> None:
+    def __init__(self, game_board: Game) -> None:
         super(MCTS_NN_Tree, self).__init__(game_board)
         self.net: BaseRenset = BaseRenset(game_board, num_resblocks=10, num_hidden=3)
         self.value_crit = torch.nn.MSELoss()
@@ -141,7 +141,7 @@ class MCTS_NN_Tree(TreePlayer):
         else:
             return min(self.root.children, key=lambda c: c[1].eval / c[1].visits)
         
-    def create_node(self, state: Board, parent: Node = None) -> Node:
+    def create_node(self, state: Game, parent: Node = None) -> Node:
         return MCTS_NN_Node(state, parent=parent, net=self.net)
         
     def static_train(self, epochs: int, X_train: np.ndarray, Y_train: np.ndarray, save_to: str, save_as: str = "net"):
@@ -286,7 +286,7 @@ class MCTS_NN_Tree(TreePlayer):
         torch.save(self.net, path + save)
         
     
-    def calc_best_move(self, max_iter: int = 1000, max_depth = -1, node: MCTS_NN_Node = None, board: Board = None):
+    def calc_best_move(self, max_iter: int = 1000, max_depth = -1, node: MCTS_NN_Node = None, board: Game = None):
         if node is None:
             node = self.root
         if board is None:

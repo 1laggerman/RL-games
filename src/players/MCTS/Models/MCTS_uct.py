@@ -1,4 +1,4 @@
-from src.base import Move, Board, gameState, player
+from src.base import Move, Game, gameState, player
 from src.players.MCTS.Treeplayer import Node, TreePlayer
 
 import random
@@ -16,7 +16,7 @@ class MCTS_uct_Node(Node):
         * evaluate(board: Board): Evaluate the node using a random game simulation
     """
     
-    def __init__(self, state: Board, parent: "MCTS_uct_Node" = None) -> None:
+    def __init__(self, state: Game, parent: "MCTS_uct_Node" = None) -> None:
         super(MCTS_uct_Node, self).__init__(state, parent=parent)
     
     def select_child(self):
@@ -40,7 +40,7 @@ class MCTS_uct_Node(Node):
 
         return best_child
          
-    def expand(self, board: Board, move: Move = None):
+    def expand(self, board: Game, move: Move = None):
         new_action = move
         if move is None or move not in self.untried_actions:
             new_action = self.untried_actions.pop()
@@ -50,13 +50,15 @@ class MCTS_uct_Node(Node):
         if board.state == gameState.ENDED or board.state == gameState.DRAW:
             new_Node.is_terminal = True
             new_Node.player = board.curr_player
+
+        new_Node.evaluate(board)
         
         board.unmake_move()
         new_child = (new_action, new_Node)
         self.children.append(new_child)
         return new_child
         
-    def evaluate(self, board: Board):
+    def evaluate(self, board: Game):
         board = deepcopy(board)
         while board.state is not gameState.DRAW and board.state is not gameState.ENDED:
             choices = [i for i in range(board.legal_moves.__len__())]
@@ -84,13 +86,13 @@ class MCTS_uct_Tree(TreePlayer):
         * create_node(untried_actions: list[Move], player: player, parent: Node = None) -> Node: Create a new uct node
     """
     
-    def __init__(self, game_board: Board, name: str) -> None:
+    def __init__(self, game_board: Game, name: str) -> None:
         super(MCTS_uct_Tree, self).__init__(game_board, name)
         
     def best(self):
         return max(self.root.children, key=lambda c: c[1].visits if c[1].visits > 0 else 0)
         # return min(self.root.children, key=lambda c: c[1].eval / c[1].visits if c[1].visits > 0 else 0)
     
-    def create_node(self, state: Board, parent: Node = None) -> Node:
+    def create_node(self, state: Game, parent: Node = None) -> Node:
         return MCTS_uct_Node(state, parent)
 

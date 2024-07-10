@@ -1,4 +1,4 @@
-from src.base import Board, Move, gameState, Piece
+from src.base import Game, Move, gameState, Piece
 import numpy as np
 
 class connect4_Move(Move):    
@@ -18,7 +18,7 @@ class connect4_Move(Move):
         return str(self)
         
 
-class connect4_Board(Board):
+class connect4_Board(Game):
     
     cols_heights: list[int]
     legal_moves: list[connect4_Move]

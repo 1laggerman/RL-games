@@ -1,4 +1,4 @@
-from src.base import Board, Move, gameState
+from src.base import Game, Move, gameState
 
 import numpy as np
 import itertools as it
@@ -30,7 +30,7 @@ class hex_Move(Move):
     def __repr__(self):
         return str(self)
     
-class hex_Board(Board):
+class hex_Board(Game):
     legal_moves: list[hex_Move]
     linked_to_edge: np.ndarray
     

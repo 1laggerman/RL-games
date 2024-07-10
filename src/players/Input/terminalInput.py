@@ -1,8 +1,8 @@
-from src.base import Board, Move, gameState, player
+from src.base import Game, Move, gameState, player
 
 class terminalPlayer(player):
     
-    def __init__(self, game_board: Board, name: str) -> None:
+    def __init__(self, game_board: Game, name: str) -> None:
         super().__init__(game_board, name)
 
     def get_move(self):

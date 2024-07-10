@@ -29,7 +29,7 @@ bind(board, players)
 
 # board.map_move()
 
-# p1.self_play(decay=0.9)
+p1.self_play(decay=0.9)
 # board.make_move(TicTacToe_move("0, 0"))
 # print(board.encode())
 

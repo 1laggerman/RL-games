@@ -1,4 +1,4 @@
-from src.base import Move, Board, gameState
+from src.base import Move, Game, gameState
 from src.players.MCTS.Treeplayer import Node, TreePlayer
 
 class MCTS_ab_Node(Node):

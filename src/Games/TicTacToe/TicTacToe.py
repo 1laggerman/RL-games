@@ -1,4 +1,4 @@
-from src.base import Board, Move, gameState, player, Piece
+from src.base import Game, Move, gameState, player, Piece
 
 class TicTacToe_move(Move):
     """
@@ -18,7 +18,7 @@ class TicTacToe_move(Move):
         return self.dest_location[0] == __value.dest_location[0] and self.dest_location[1] == __value.dest_location[1]
         
 
-class TicTacToe_Board(Board):
+class TicTacToe_Board(Game):
     """
     A TicTacToe game board.
 
@@ -46,8 +46,8 @@ class TicTacToe_Board(Board):
         return None
     
     def update_state(self, last_move: TicTacToe_move):
-        y = last_move.location[0]
-        x = last_move.location[1]
+        y = last_move.dest_location[0]
+        x = last_move.dest_location[1]
         
         self.board[x, y] = Piece(self.curr_player.name, self.curr_player, location=(x, y))
         self.legal_moves.remove(last_move)
@@ -64,12 +64,12 @@ class TicTacToe_Board(Board):
                 
             i = 0
             move = TicTacToe_move(f"{loc[0]},{loc[1]}")
-            while move.location[0] >= 0 and move.location[0] < self.board.shape[0] and move.location[1] >= 0 and move.location[1] < self.board.shape[1]:
+            while move.dest_location[0] >= 0 and move.dest_location[0] < self.board.shape[0] and move.dest_location[1] >= 0 and move.dest_location[1] < self.board.shape[1]:
                 location: Piece = self.board[loc[0] + i * dx, loc[1] + i * dy]
                 if location is None or location.name != self.curr_player.name:
                     break
                 i += 1
-                move.location = (loc[0] + i * dx, loc[1] + i * dy)
+                move.dest_location = (loc[0] + i * dx, loc[1] + i * dy)
 
             if i == 3: # 3 in a row
                 self.win()
@@ -82,8 +82,8 @@ class TicTacToe_Board(Board):
         return self
             
     def reverse_state(self, move: TicTacToe_move):
-        y = move.location[0]
-        x = move.location[1]
+        y = move.dest_location[0]
+        x = move.dest_location[1]
         self.board[x, y] = None
         self.legal_moves.append(move)
         self.state = gameState.ONGOING
