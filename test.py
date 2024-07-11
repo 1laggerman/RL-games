@@ -8,7 +8,9 @@ import time
 from copy import deepcopy
 import numpy as np
 from typing import Any
-# from package.gameplay.play import play
+
+
+
 
 # move = TicTacToe_move("0, 0")
 # print(move)
@@ -18,6 +20,8 @@ board = TicTacToe_Board((3, 3))
 
 # p1 = MCTS_uct_Tree(board, "X")
 p1 = Alpha_Zero_player(board, "X", net=BaseRenset(board, 10, 3))
+# p1 = humanPlayer(board, "X")
+
 p2 = humanPlayer(board, "O")
 
 players = [p1, p2]
@@ -34,7 +38,7 @@ p1.self_play(decay=0.9)
 # print(board.encode())
 
 
-# play(board=board, players=players)
+# play(board, players=players)
 
 # start = time.time()
 

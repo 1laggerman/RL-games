@@ -150,7 +150,7 @@ class TreePlayer(player, ABC):
         if self.root == None:
             if self.board is None:
                 raise ValueError("Board not set")
-            self.root = self.create_node(state=self.board, parent=None)
+            self.root = self.create_node(self.board, None)
             if self.start_node == None:
                 self.start_node = self.root
         

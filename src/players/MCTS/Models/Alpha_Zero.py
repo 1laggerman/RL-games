@@ -39,7 +39,7 @@ class Alpha_Zero_Node(Node):
         for child in self.children:
             exploitation = 1 - (child[1].eval / (child[1].visits + 1))
             exploration = math.sqrt(self.visits) / (1 + child[1].visits)
-            uct_score = exploitation + C * exploration * child[1].prob
+            uct_score = exploitation + C * exploration * child[1].self_prob
 
             if uct_score > best_score:
                 best_score = uct_score
@@ -49,6 +49,8 @@ class Alpha_Zero_Node(Node):
     
     def expand(self, board: Game) -> None:
         for move in self.untried_actions:
+            if move.dest_location == (0, 1):
+                print("stop")
             prob = self.policy[board.map_move(move)]
             if prob > 0:
                 board.make_move(move)
@@ -73,7 +75,7 @@ class Alpha_Zero_Node(Node):
         return value, policy
     
     def update_rule(self, new_eval: float):
-        self.eval += new_eval
+        self.eval += new_eval[0]
 
     
 class Alpha_Zero_player(TreePlayer):

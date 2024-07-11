@@ -46,10 +46,10 @@ class TicTacToe_Board(Game):
         return None
     
     def update_state(self, last_move: TicTacToe_move):
-        y = last_move.dest_location[0]
-        x = last_move.dest_location[1]
+        x = last_move.dest_location[0]
+        y = last_move.dest_location[1]
         
-        self.board[x, y] = Piece(self.curr_player.name, self.curr_player, location=(x, y))
+        self.board[last_move.dest_location] = Piece(self.curr_player.name, self.curr_player, location=last_move.dest_location)
         self.legal_moves.remove(last_move)
         directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
 
@@ -77,9 +77,6 @@ class TicTacToe_Board(Game):
         
         if len(self.legal_moves) == 0:
             self.draw()
-            return
-        
-        return self
             
     def reverse_state(self, move: TicTacToe_move):
         y = move.dest_location[0]
