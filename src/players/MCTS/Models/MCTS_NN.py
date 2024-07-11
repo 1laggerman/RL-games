@@ -136,7 +136,7 @@ class MCTS_NN_Tree(TreePlayer):
         
         
     def best(self):
-        if self.board.curr_player_idx == 0:
+        if self.game.curr_player_idx == 0:
             return max(self.root.children, key=lambda c: c[1].eval / c[1].visits)
         else:
             return min(self.root.children, key=lambda c: c[1].eval / c[1].visits)
@@ -180,7 +180,7 @@ class MCTS_NN_Tree(TreePlayer):
             print(cm(pred, y))
             
     def self_play(self, num_searches: int = 1000, tree_max_depth: int = -1, decay: float = 0.9) -> tuple[np.ndarray, np.ndarray]:
-        board = deepcopy(self.board)
+        board = deepcopy(self.game)
         node = deepcopy(self.root)
         with open('example.txt', 'a') as f:
             f.write(f'starting game\n{board}\n')
@@ -209,7 +209,7 @@ class MCTS_NN_Tree(TreePlayer):
         res = 0
         if board.state == gameState.DRAW:
             res = 0.5
-        elif self.board.winner == board.players[0]:
+        elif self.game.winner == board.players[0]:
             res = 1
         
         samples = board.encode()
@@ -245,8 +245,8 @@ class MCTS_NN_Tree(TreePlayer):
         return samples, value_labels, policy_labels
     
     def train(self, self_learn_epochs: int, game_epochs: int, num_searches: int = 1000, tree_max_depth: int = -1, decay: float = 0.9, load: str = None, save: str = None):
-        board_backup = deepcopy(self.board)
-        path = '/'.join(self.board.__module__.split(".")[0:2]) + '/Models/'
+        board_backup = deepcopy(self.game)
+        path = '/'.join(self.game.__module__.split(".")[0:2]) + '/Models/'
         if load is not None:
             self.net: BaseRenset = torch.load(path + load)
         losses = []
@@ -282,7 +282,7 @@ class MCTS_NN_Tree(TreePlayer):
         plt.title('value loss')
         
         plt.show()
-        self.board = deepcopy(board_backup)
+        self.game = deepcopy(board_backup)
         torch.save(self.net, path + save)
         
     
@@ -290,7 +290,7 @@ class MCTS_NN_Tree(TreePlayer):
         if node is None:
             node = self.root
         if board is None:
-            board = self.board
+            board = self.game
         max_d = 0
         
         if len(board.legal_moves) <= 2:

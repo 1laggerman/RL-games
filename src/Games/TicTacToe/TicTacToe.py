@@ -79,9 +79,7 @@ class TicTacToe_Board(Game):
             self.draw()
             
     def reverse_state(self, move: TicTacToe_move):
-        y = move.dest_location[0]
-        x = move.dest_location[1]
-        self.board[x, y] = None
+        self.board[move.dest_location] = None
         self.legal_moves.append(move)
         self.state = gameState.ONGOING
         self.winner = None

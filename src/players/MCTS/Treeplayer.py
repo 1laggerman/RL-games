@@ -1,11 +1,23 @@
 from src.base import Move, Game, gameState, player
 
-import random
-import math
-from copy import deepcopy
+from dataclasses import dataclass
 from abc import ABC, abstractmethod
 import tqdm
 import time
+
+
+@dataclass(init=True, frozen=False)
+class searchArgs:
+    __slots__ = ("max_iters", "max_time", "max_depth",)
+    max_iters: int
+    max_time: float
+    max_depth: int
+
+    def __init__(self, max_iters: int = 100, max_time: float = float('inf'), max_depth: int = -1) -> None:
+        self.max_iters = max_iters
+        self.max_time = max_time
+        self.max_depth = max_depth
+        
 
 class Node(ABC):
     """
@@ -113,7 +125,7 @@ class TreePlayer(player, ABC):
     Attributes:
         * start_node (Node): The absolute root of the tree, from which all other nodes are descendants
         * root (Node): The current root of the tree, set to the current game state node
-        * game (Game): reference to the game board
+        * game (Game): reference to the Game object
         * search_iters (int): The max number of iterations to search the tree for (set to 1000 by default)
         * search_time (float): The max time to search the tree for (set to infinity by default)
         * max_depth (int): The max depth to search the tree for (set to -1 for unlimited depth)
@@ -121,7 +133,7 @@ class TreePlayer(player, ABC):
     Methods provided by the abstract class:
         * get_move(): perfoems a search of the tree and returns the best move found using best()
         * calc_best_move(): builds a search tree by searching the tree for search_iters iterations or search_time seconds with at most max_depth depth
-        * move(move: Move): updates self.root after a move was made in the board. creates a new Node and links to the tree if it doesnt exist yet
+        * move(move: Move): updates self.root after a move was made in the game. creates a new Node and links to the tree if it doesnt exist yet
         
     Methods to be implemented by a child class:
         * create_node(untried_actions: list[Move], player: player): creates a new node for the tree
@@ -129,28 +141,24 @@ class TreePlayer(player, ABC):
     """
     start_node: Node
     root: Node
-    board: Game
-    search_iters: int
-    search_time: float
-    max_depth: int
+    game: Game
+    search_args: searchArgs
     
-    def __init__(self, game_board: Game, name: str, search_iters: int = 1000, search_time: float = float('inf'), max_depth: int = -1) -> None:
-        super(TreePlayer, self).__init__(game_board, name)
-        self.search_iters = search_iters
-        self.search_time = search_time
-        self.max_depth = max_depth
+    def __init__(self, game: Game, name: str, search_args: searchArgs) -> None:
+        super(TreePlayer, self).__init__(game, name)
+        self.search_args = search_args
         self.start_node = None
         self.root = None
-        self.board = game_board
+        self.game = game
         
     def get_move(self):
         """
         searches the tree by calling calc_best_move and returns the best move
         """
         if self.root == None:
-            if self.board is None:
+            if self.game is None:
                 raise ValueError("Board not set")
-            self.root = self.create_node(self.board, None)
+            self.root = self.create_node(self.game, None)
             if self.start_node == None:
                 self.start_node = self.root
         
@@ -168,53 +176,53 @@ class TreePlayer(player, ABC):
         * adds a maximum of self.search_iters number of nodes to the tree
         * doesnt add nodes of depth greater than self.max_depth
         """
-        max_d = 0
+        iters = searchArgs.max_iters
+        curr_max_depth = 0
         start_time = time.time()
         
         while len(self.root.untried_actions) > 0:
-            board = self.board
-            (move, node) = self.root.expand(board)
-            board.make_move(move)
-            ev = node.evaluate(board)
-            board.unmake_move()
+            game = self.game
+            (move, node) = self.root.expand(game)
+            game.make_move(move)
+            ev = node.evaluate(game)
+            game.unmake_move()
             node.backpropagate(ev)
-            self.search_iters -= 1
+            iters -= 1
         
         # with tqdm.tqdm(total=max_iter)
         
-        for _ in tqdm.tqdm(range(self.search_iters)):
+        for _ in tqdm.tqdm(range(iters)):
             t0 = time.time()
             node = self.root
-            # board = deepcopy(self.board)
-            board = self.board
+            game = self.game
             depth = 0
             
             while len(node.untried_actions) == 0 and not node.is_terminal:
                 (move, node) = node.select_child()
-                board.make_move(move)
+                game.make_move(move)
                 depth += 1
             
             ev = 0
             if not node.is_terminal:
-                if self.max_depth <= 1 or depth + 1 < self.max_depth:
-                    (move, node) = node.expand(board)
-                    board.make_move(move)
+                if self.search_args.max_depth <= 1 or depth + 1 < self.search_args.max_depth:
+                    (move, node) = node.expand(game)
+                    game.make_move(move)
                     depth += 1
                     
             if node.is_terminal:
                 pass
                     
-            ev = node.evaluate(board)
+            ev = node.evaluate(game)
             
             for d in range(depth):
-                self.board.unmake_move()
+                self.game.unmake_move()
             
             node.backpropagate(ev)
-            if depth > max_d:
-                max_d = depth
+            if depth > curr_max_depth:
+                curr_max_depth = depth
             
             flag_time = time.time()
-            if flag_time - start_time > self.search_time:
+            if flag_time - start_time > self.search_args.max_time:
                 break
     
     def move(self, move: Move):
@@ -230,9 +238,8 @@ class TreePlayer(player, ABC):
                 break
         
         if not found:
-            (move, node) = self.root.expand(self.board, move)
+            (move, node) = self.root.expand(self.game, move)
             self.root = node
-        # self.board.make_move(move)
         return
     
     @abstractmethod       

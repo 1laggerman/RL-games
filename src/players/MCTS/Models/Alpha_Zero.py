@@ -1,5 +1,5 @@
 from src.base import Move, Game, gameState
-from src.players.MCTS.Treeplayer import Node, TreePlayer
+from src.players.MCTS.Treeplayer import Node, TreePlayer, searchArgs
 from src.players.MCTS.Models.ML_architecture.resnet import BaseRenset
 
 import math
@@ -11,11 +11,33 @@ import torch
 import matplotlib.pyplot as plt
 from torchmetrics.classification import confusion_matrix, accuracy
 
+torch.manual_seed(0)
+
+class AZ_search_args(searchArgs):
+    def __init__(self, max_iters: int = 10, max_time: float = float('inf'), max_depth: int = -1) -> None:
+        super().__init__(max_iters, max_time, max_depth)
+
+class AZ_net_args:
+    net: torch.nn.Module
+    device: torch.device
+    optimizer: torch.optim.Optimizer
+    value_crit: torch.nn
+    policy_crit: torch.nn
+
+    def __init__(self, net: torch.nn.Module, device: torch.device, optimizer: torch.optim, value_criterion: torch.nn, policy_criterion: torch.nn) -> None:
+        self.net = net
+        self.device = device
+        self.optimizer = optimizer
+        self.value_crit = value_criterion
+        self.policy_crit = policy_criterion
+
 class Alpha_Zero_Node(Node):
     policy: np.ndarray[float]
     self_prob: float
+    net_eval: torch.Tensor
+    tree_eval: torch.Tensor
 
-    def __init__(self, game: Game, net: torch.nn.Module, parent: "Alpha_Zero_Node" = None, search_iters: int = 10, search_time: float = float('inf'), max_depth: int = -1, prob: float = 0, maximizer: bool = True) -> None:
+    def __init__(self, game: Game, net: torch.nn.Module, parent: "Alpha_Zero_Node" = None, prob: float = 0, maximizer: bool = True) -> None:
         super(Alpha_Zero_Node, self).__init__(game, parent=parent)
         self.net: BaseRenset = net
         self.self_prob = prob
@@ -24,7 +46,8 @@ class Alpha_Zero_Node(Node):
 
         if game is not None:    
             with torch.no_grad():
-                self.eval, self.policy = self.evaluate(game)
+                self.net_eval, self.policy = self.evaluate(game)
+                self.eval = self.net_eval.item()
 
     def select_child(self):
         
@@ -47,27 +70,25 @@ class Alpha_Zero_Node(Node):
 
         return best_child  
     
-    def expand(self, board: Game) -> None:
+    def expand(self, game: Game) -> None:
         for move in self.untried_actions:
-            if move.dest_location == (0, 1):
-                print("stop")
-            prob = self.policy[board.map_move(move)]
+            prob = self.policy[game.map_move(move)]
             if prob > 0:
-                board.make_move(move)
-                new_Node = Alpha_Zero_Node(board, net=self.net, parent=self, prob=prob)
+                game.make_move(move)
+                new_Node = Alpha_Zero_Node(game, net=self.net, parent=self, prob=prob)
                 new_child = (move, new_Node)
                 self.children.append(new_child)
-                board.unmake_move()
+                game.unmake_move()
                 
         self.untried_actions = []
         
         return random.choices(self.children, weights=self.policy[self.policy > 0], k=1)[0]
     
-    def evaluate(self, board: Game) -> tuple[torch.Tensor, torch.Tensor]:
-        value, policy = self.net.forward(torch.Tensor(board.encode()).unsqueeze(0).to(self.net.device))
+    def evaluate(self, game: Game) -> tuple[torch.Tensor, torch.Tensor]:
+        value, policy = self.net.forward(torch.Tensor(game.encode()).unsqueeze(0).to(self.net.device))
         
         policy = policy.squeeze(0).detach().cpu().numpy()
-        legal = np.where(board.board == None, 1, 0).flatten()
+        legal = np.where(game.board == None, 1, 0).flatten()
         policy *= legal
         s = np.sum(policy)
         if s > 0:
@@ -75,19 +96,16 @@ class Alpha_Zero_Node(Node):
         return value, policy
     
     def update_rule(self, new_eval: float):
-        self.eval += new_eval[0]
+        self.tree_eval += new_eval[0]
 
     
 class Alpha_Zero_player(TreePlayer):
     root: Alpha_Zero_Node
-    def __init__(self, game_board: Game, name: str, net: torch.nn.Module) -> None:
-        super(Alpha_Zero_player, self).__init__(game_board, name)
-        self.net = net
-        self.value_crit = torch.nn.MSELoss()
-        self.policy_crit = torch.nn.CrossEntropyLoss()
-        self.opt = torch.optim.Adam(self.net.parameters(), lr=0.001, betas=(0.9, 0.999), weight_decay=0.4)
+    def __init__(self, game: Game, name: str, search_args: AZ_search_args, net_args: AZ_net_args) -> None:
+        super(Alpha_Zero_player, self).__init__(game, name, search_args)
+        self.net_args = net_args
         with torch.no_grad():
-            self.net.apply(init_weights)
+            self.net_args.net.apply(init_weights)
         
     def best(self) -> tuple[Move, Node]:
         if self.root.maximizer:
@@ -102,16 +120,16 @@ class Alpha_Zero_player(TreePlayer):
     
     def static_train(self, epochs: int, X_train: np.ndarray, Y_train: np.ndarray, save_to: str, save_as: str = "net"):
         losses = []
-        X_train = torch.from_numpy(X_train).float().to(self.net.device)
-        Y_train = torch.from_numpy(Y_train).float().to(self.net.device)
+        X_train = torch.from_numpy(X_train).float().to(self.net_args.device)
+        Y_train = torch.from_numpy(Y_train).float().to(self.net_args.device)
         
         for epoch in range(epochs):
-            self.opt.zero_grad()
-            pred = self.net.forward(X_train)
-            loss = self.value_crit.forward(pred, Y_train)
+            self.net_args.optimizer.zero_grad()
+            pred = self.net_args.net.forward(X_train)
+            loss = self.net_args.value_crit.forward(pred, Y_train)
             losses.append(loss.item())
             loss.backward()
-            self.opt.step()
+            self.net_args.optimizer.step()
         
         plt.plot(losses)
         plt.show()
@@ -123,38 +141,38 @@ class Alpha_Zero_player(TreePlayer):
         if load:
             self.net = torch.load('value_head.pt')
         
-        x = torch.from_numpy(x).float().to(self.net.device)
-        y = torch.from_numpy(y).float().to(self.net.device)
+        x = torch.from_numpy(x).float().to(self.net_args.device)
+        y = torch.from_numpy(y).float().to(self.net_args.device)
         with torch.no_grad():
-            pred: torch.Tensor = self.net.forward(x)
-            loss = self.value_crit.forward(pred, y)
+            pred: torch.Tensor = self.net_args.net.forward(x)
+            loss = self.net_args.value_crit.forward(pred, y)
             pred = torch.clip(pred, min=0, max=1)
             print(f'Test Loss: {loss.item()}')
-            cm = confusion_matrix.BinaryConfusionMatrix().to(self.net.device)
-            acc = accuracy.Accuracy(task="binary").to(self.net.device)
+            cm = confusion_matrix.BinaryConfusionMatrix().to(self.net_args.device)
+            acc = accuracy.Accuracy(task="binary").to(self.net_args.device)
             print(acc(pred, y))
             print(cm(pred, y))
 
     def self_play(self, decay: float = 0.9):
-        board = deepcopy(self.board)
+        game = deepcopy(self.game)
         with torch.no_grad():
-            while board.state == gameState.ONGOING:
+            while game.state == gameState.ONGOING:
                 move = self.get_move() # exploit method
                 move, node = random.choices(self.root.children, weights=self.root.policy, k=1)[0] # explore method
                 
                 if move is not None:
-                    board.make_move(move)
+                    game.make_move(move)
                     self.move(move)
                 else:
                     print("ERROR")
-                print(board)
-        print('winner is: ', board.winner)
+                print(game)
+        print('winner is: ', game.winner)
 
-        res = board.reward
-        if board.winner != board.players[0]:
+        res = game.reward
+        if game.winner != game.players[0]:
             res = -res
         
-        samples = board.encode()
+        samples = game.encode()
         samples = samples.reshape((1, *samples.shape))
 
         value_labels = np.array([res])
@@ -164,9 +182,9 @@ class Alpha_Zero_player(TreePlayer):
 
         node = node.parent
         while node is not None:
-            board.unmake_move()
+            game.unmake_move()
             
-            new_sample = board.encode()
+            new_sample = game.encode()
             
             res = 2 * res - 1
             res = decay * res
@@ -175,7 +193,7 @@ class Alpha_Zero_player(TreePlayer):
             
             true_policy = np.zeros(node.policy.shape)
             for move, child in node.children:
-                true_policy[board.map_move(move)] = child.visits
+                true_policy[game.map_move(move)] = child.visits
             true_policy /= np.sum(true_policy)
             
             samples = np.concatenate([samples, new_sample.reshape((1, *new_sample.shape))])
