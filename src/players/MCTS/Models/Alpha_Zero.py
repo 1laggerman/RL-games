@@ -24,7 +24,7 @@ class AZ_net_args:
     value_crit: torch.nn
     policy_crit: torch.nn
 
-    def __init__(self, net: torch.nn.Module, device: torch.device, optimizer: torch.optim, value_criterion: torch.nn, policy_criterion: torch.nn) -> None:
+    def __init__(self, net: torch.nn.Module, device: torch.device, optimizer: torch.optim.Optimizer, value_criterion: torch.nn, policy_criterion: torch.nn) -> None:
         self.net = net
         self.device = device
         self.optimizer = optimizer
@@ -47,6 +47,7 @@ class Alpha_Zero_Node(Node):
         if game is not None:    
             with torch.no_grad():
                 self.net_eval, self.policy = self.evaluate(game)
+                self.tree_eval = self.net_eval
                 self.eval = self.net_eval.item()
 
     def select_child(self):
@@ -116,14 +117,14 @@ class Alpha_Zero_player(TreePlayer):
     def create_node(self, game: Game, parent: Alpha_Zero_Node = None, action: int = 0) -> Node:
         prob = parent.policy[action] if parent is not None else 0
         player_type = not parent.maximizer if parent is not None else True
-        return Alpha_Zero_Node(game, net=self.net, parent=parent, prob=prob, maximizer=player_type)
+        return Alpha_Zero_Node(game, net=self.net_args.net, parent=parent, prob=prob, maximizer=player_type)
     
     def static_train(self, epochs: int, X_train: np.ndarray, Y_train: np.ndarray, save_to: str, save_as: str = "net"):
         losses = []
         X_train = torch.from_numpy(X_train).float().to(self.net_args.device)
         Y_train = torch.from_numpy(Y_train).float().to(self.net_args.device)
         
-        for epoch in range(epochs):
+        for _ in range(epochs):
             self.net_args.optimizer.zero_grad()
             pred = self.net_args.net.forward(X_train)
             loss = self.net_args.value_crit.forward(pred, Y_train)
@@ -154,11 +155,22 @@ class Alpha_Zero_player(TreePlayer):
             print(cm(pred, y))
 
     def self_play(self, decay: float = 0.9):
-        game = deepcopy(self.game)
+        move_count = 0
+        game = self.game
         with torch.no_grad():
             while game.state == gameState.ONGOING:
                 move = self.get_move() # exploit method
-                move, node = random.choices(self.root.children, weights=self.root.policy, k=1)[0] # explore method
+                move, node = random.choices(self.root.children, weights=self.root.policy[self.root.policy > 0], k=1)[0] # explore method
+
+                if move_count == 0:
+                    move, node = self.root.children[2]
+                    move_count += 1
+                elif move_count == 1:
+                    for child in self.root.children:
+                        if child[0].dest_location == (2, 1):
+                            move, node = child
+                            break
+                    move_count += 1
                 
                 if move is not None:
                     game.make_move(move)
@@ -166,7 +178,7 @@ class Alpha_Zero_player(TreePlayer):
                 else:
                     print("ERROR")
                 print(game)
-        print('winner is: ', game.winner)
+        print('winner is: ', game.winner.name)
 
         res = game.reward
         if game.winner != game.players[0]:

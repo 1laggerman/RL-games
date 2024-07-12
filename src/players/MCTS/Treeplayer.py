@@ -8,7 +8,6 @@ import time
 
 @dataclass(init=True, frozen=False)
 class searchArgs:
-    __slots__ = ("max_iters", "max_time", "max_depth",)
     max_iters: int
     max_time: float
     max_depth: int
@@ -164,7 +163,7 @@ class TreePlayer(player, ABC):
         
         self.calc_best_move()
         for move, node in self.root.children:
-            print(move, ': ', node.eval, ' / ', node.visits)
+            print(move, ': %.3f / %d' % (node.eval, node.visits))
         return self.best()[0]
         
     def calc_best_move(self):
@@ -176,7 +175,7 @@ class TreePlayer(player, ABC):
         * adds a maximum of self.search_iters number of nodes to the tree
         * doesnt add nodes of depth greater than self.max_depth
         """
-        iters = searchArgs.max_iters
+        iters = self.search_args.max_iters
         curr_max_depth = 0
         start_time = time.time()
         
@@ -205,6 +204,8 @@ class TreePlayer(player, ABC):
             ev = 0
             if not node.is_terminal:
                 if self.search_args.max_depth <= 1 or depth + 1 < self.search_args.max_depth:
+                    if move.dest_location == (2, 1):
+                        print("expanding bug")
                     (move, node) = node.expand(game)
                     game.make_move(move)
                     depth += 1
