@@ -10,6 +10,7 @@ from copy import deepcopy
 import numpy as np
 from typing import Any
 import torch
+import os
 
 # move = TicTacToe_move("0, 0")
 # print(move)
@@ -36,11 +37,21 @@ players = [p1, p2]
 
 bind(board, players)
 
+
+
 # print(board.map_move(TicTacToe_move("1, 1")))
 
 # board.map_move()
+# print(os.path.abspath(board))
 
-p1.self_play(decay=0.9)
+# print(os.path.abspath(os.path.dirname(__file__)))
+path = "nkja.pt"
+
+if path[-3:] != ".pt":
+    path += ".pt"
+
+print(path)
+# p1.open_test()
 # board.make_move(TicTacToe_move("0, 0"))
 # print(board.encode())
 

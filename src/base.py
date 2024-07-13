@@ -3,8 +3,11 @@ import numpy as np
 import enum as Enum
 from enum import Enum
 from copy import deepcopy, copy
+from pathlib import Path
 
-class player(ABC):
+current_file_path = Path(__file__).resolve()
+
+class Player(ABC):
     """
     A basic abstract player class
     
@@ -19,11 +22,20 @@ class player(ABC):
     """
     board: 'Game'
     name: str
+    reward: float
     pieces: list['Piece']
     
     def __init__(self, game_board: 'Game', name: str) -> None:
         self.board = game_board
         self.name = name
+        self.reward = 0
+        self.pieces = []
+
+    def recv_reward(self, reward: float):
+        """
+        updates the reward of the player for the game
+        """
+        self.reward += reward
 
     @abstractmethod
     def get_move(self) -> 'Move':
@@ -69,10 +81,10 @@ class Piece(ABC):
         * location (tuple[int]): location of the piece on the board
     """
     name: str
-    player: 'player'
+    player: 'Player'
     location: tuple[int]
     
-    def __init__(self, name: str, player: 'player', location: tuple[int]) -> None:
+    def __init__(self, name: str, player: 'Player', location: tuple[int]) -> None:
         self.player = player
         self.name = name
         self.location = location
@@ -80,7 +92,7 @@ class Piece(ABC):
     def __eq__(self, other) -> bool:
         if isinstance(other, Piece):
             return self.name == other.name
-        elif isinstance(other, player):
+        elif isinstance(other, Player):
             return self.player.name == other.name
         elif isinstance(other, str):
             return self.name == other
@@ -120,7 +132,7 @@ class Move(ABC):
     reward: float = 0
     piece: Piece
     
-    def __init__(self, name: str, player: 'player' = None, reward: float = 0) -> None:
+    def __init__(self, name: str, player: 'Player' = None, reward: float = 0) -> None:
         super(Move, self).__init__()
         self.name = name.replace(" ", "") # clean move name
         self.reward = reward
@@ -199,15 +211,15 @@ class Game(ABC):
     """
     board: np.ndarray[Piece]
     legal_moves: list[Move]
-    players: list['player']
+    players: list['Player']
     state: gameState
     reward: float
-    winner: 'player'
+    winner: 'Player'
     curr_player_idx: int
-    curr_player: 'player'
+    curr_player: 'Player'
     history: list[Move]
     
-    def __init__(self, board_size: tuple, players: list['player'] = []) -> None:
+    def __init__(self, board_size: tuple, players: list['Player'] = []) -> None:
         super().__init__()
         self.state = gameState.ONGOING
         self.history = []
@@ -359,6 +371,11 @@ class Game(ABC):
         self.state = gameState.ENDED
         self.winner = self.curr_player
         self.reward = 1
+        for player in self.players:
+            if player == self.winner:
+                player.recv_reward(self.reward)
+            else:
+                player.recv_reward(-self.reward)
         
     def draw(self):
         """
@@ -366,6 +383,8 @@ class Game(ABC):
         """
         self.state = gameState.DRAW
         self.reward = 0
+        for player in self.players:
+            player.recv_reward(self.reward)
         
     def lose(self):
         """
@@ -374,6 +393,11 @@ class Game(ABC):
         self.state = gameState.ENDED
         self.winner = self.players[self.curr_player_idx - 1]
         self.reward = -1
+        for player in self.players:
+            if player == self.winner:
+                player.recv_reward(self.reward)
+            else:
+                player.recv_reward(-self.reward)
 
     def map_move(self, move: Move) -> int:
         """
@@ -414,7 +438,7 @@ class Game(ABC):
         
         return result
     
-def bind(game: 'Game', players: list['player']):
+def bind(game: 'Game', players: list['Player']):
     """
     binds game and players to each other
     couses each side to hold a reference to the other
@@ -434,7 +458,7 @@ def bind(game: 'Game', players: list['player']):
     for player in players:
         player.board = game
 
-def play(game: 'Game', players: list['player']):
+def play(game: 'Game', players: list['Player']):
     """
     simulates a simple game loop between any 2 players
 

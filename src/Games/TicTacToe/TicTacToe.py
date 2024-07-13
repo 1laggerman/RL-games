@@ -1,4 +1,5 @@
-from src.base import Game, Move, gameState, player, Piece
+from src.base import Game, Move, gameState, Player, Piece
+import os
 
 class TicTacToe_move(Move):
     """
@@ -83,6 +84,9 @@ class TicTacToe_Board(Game):
         self.legal_moves.append(move)
         self.state = gameState.ONGOING
         self.winner = None
+        self.reward = 0
+        for player in self.players:
+            player.reward = 0
         
     def __str__(self):
         board_str = ''
@@ -101,5 +105,6 @@ class TicTacToe_Board(Game):
                 board_str += '-' * dots + '\n'
 
         return board_str
+    
     
         

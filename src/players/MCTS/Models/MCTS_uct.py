@@ -1,4 +1,4 @@
-from src.base import Move, Game, gameState, player
+from src.base import Move, Game, gameState, Player
 from src.players.MCTS.Treeplayer import Node, TreePlayer
 
 import random

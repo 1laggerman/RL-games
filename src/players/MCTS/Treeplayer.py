@@ -1,4 +1,4 @@
-from src.base import Move, Game, gameState, player
+from src.base import Move, Game, gameState, Player
 
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
@@ -42,7 +42,7 @@ class Node(ABC):
     visits: int = 0
     eval: float = 0
     parent: 'Node'
-    player: 'player'
+    player: 'Player'
     children: list[tuple[Move, "Node"]]
     untried_actions: list[Move]
     is_terminal: bool = False
@@ -117,7 +117,7 @@ class Node(ABC):
     def __repr__(self) -> str:
         return str(self)
             
-class TreePlayer(player, ABC):
+class TreePlayer(Player, ABC):
     """
     A general MCTS player
     
@@ -204,8 +204,6 @@ class TreePlayer(player, ABC):
             ev = 0
             if not node.is_terminal:
                 if self.search_args.max_depth <= 1 or depth + 1 < self.search_args.max_depth:
-                    if move.dest_location == (2, 1):
-                        print("expanding bug")
                     (move, node) = node.expand(game)
                     game.make_move(move)
                     depth += 1

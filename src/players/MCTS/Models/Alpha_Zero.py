@@ -1,11 +1,14 @@
 from src.base import Move, Game, gameState
 from src.players.MCTS.Treeplayer import Node, TreePlayer, searchArgs
 from src.players.MCTS.Models.ML_architecture.resnet import BaseRenset
+from pathlib import Path
+import inspect
 
 import math
 import random
 from copy import deepcopy
 import numpy as np
+import os
 
 import torch
 import matplotlib.pyplot as plt
@@ -118,6 +121,30 @@ class Alpha_Zero_player(TreePlayer):
         prob = parent.policy[action] if parent is not None else 0
         player_type = not parent.maximizer if parent is not None else True
         return Alpha_Zero_Node(game, net=self.net_args.net, parent=parent, prob=prob, maximizer=player_type)
+
+    def load_model(self, name: str, path: str = '') -> None:
+        if path == '':
+            path = os.path.join(os.path.dirname(inspect.getfile(self.game.__class__)) / "Models", name)
+
+        if path[-3:] != ".pt":
+            path += ".pt"
+        
+        self.net_args.net.load_state_dict(torch.load(path))
+
+    def save_model(self, name: str, path: str = '', override: bool = False) -> None:
+        if path == '':
+            path = os.path.join(os.path.dirname(inspect.getfile(self.game.__class__)) / "Models", name)
+
+        if path[-3:] != ".pt":
+            path += ".pt"
+
+        base_file_name = path[-3:]
+        if not override:
+            i = 1
+            while os.path.exists(path):
+                path = f"{base_file_name}({i}).pt"
+                i += 1
+        torch.save(self.net_args.net.state_dict(), path)
     
     def static_train(self, epochs: int, X_train: np.ndarray, Y_train: np.ndarray, save_to: str, save_as: str = "net"):
         losses = []
@@ -162,15 +189,15 @@ class Alpha_Zero_player(TreePlayer):
                 move = self.get_move() # exploit method
                 move, node = random.choices(self.root.children, weights=self.root.policy[self.root.policy > 0], k=1)[0] # explore method
 
-                if move_count == 0:
-                    move, node = self.root.children[2]
-                    move_count += 1
-                elif move_count == 1:
-                    for child in self.root.children:
-                        if child[0].dest_location == (2, 1):
-                            move, node = child
-                            break
-                    move_count += 1
+                # if move_count == 0:
+                #     move, node = self.root.children[2]
+                #     move_count += 1
+                # elif move_count == 1:
+                #     for child in self.root.children:
+                #         if child[0].dest_location == (2, 1):
+                #             move, node = child
+                #             break
+                #     move_count += 1
                 
                 if move is not None:
                     game.make_move(move)
@@ -180,9 +207,7 @@ class Alpha_Zero_player(TreePlayer):
                 print(game)
         print('winner is: ', game.winner.name)
 
-        res = game.reward
-        if game.winner != game.players[0]:
-            res = -res
+        res = game.players[0].reward
         
         samples = game.encode()
         samples = samples.reshape((1, *samples.shape))
@@ -198,9 +223,7 @@ class Alpha_Zero_player(TreePlayer):
             
             new_sample = game.encode()
             
-            res = 2 * res - 1
-            res = decay * res
-            res = (res + 1) / 2
+            res *= decay
             true_value = np.array([res])
             
             true_policy = np.zeros(node.policy.shape)
@@ -215,6 +238,9 @@ class Alpha_Zero_player(TreePlayer):
             node = node.parent
         
         return samples, value_labels, policy_labels
+    
+    # def train(self, self_learn_games: int, game_train_epochs: int, decay: float = 0.9):
+        
 
 
 def init_weights(m):
