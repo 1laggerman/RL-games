@@ -187,14 +187,14 @@ class MCTS_NN_Tree(TreePlayer):
             print('starting game\n', board)
             with torch.no_grad():
                 while board.state == gameState.ONGOING:
-                    self.calc_best_move(max_iter=num_searches, max_depth=tree_max_depth, node=node, board=board)
+                    self.search_tree(max_iter=num_searches, max_depth=tree_max_depth, node=node, board=board)
                     probs = np.zeros((len(node.children)))
                     for i, child in enumerate(node.children):
                         probs[i] = child[1].visits
                     probs /= np.sum(probs)
                     if len(node.children) == 0:
                         print("ERROR - NO CHILDREN")
-                        self.calc_best_move(max_iter=num_searches, max_depth=tree_max_depth, node=node, board=board)
+                        self.search_tree(max_iter=num_searches, max_depth=tree_max_depth, node=node, board=board)
                     move, node = random.choices(node.children, weights=probs, k=1)[0]
                     # move, child = self.best()
                     
@@ -286,7 +286,7 @@ class MCTS_NN_Tree(TreePlayer):
         torch.save(self.net, path + save)
         
     
-    def calc_best_move(self, max_iter: int = 1000, max_depth = -1, node: MCTS_NN_Node = None, board: Game = None):
+    def search_tree(self, max_iter: int = 1000, max_depth = -1, node: MCTS_NN_Node = None, board: Game = None):
         if node is None:
             node = self.root
         if board is None:

@@ -24,9 +24,9 @@ while game_board.state == gameState.ONGOING:
 game_board = connect4_Board(6, 7, players=['X', 'O'])
 game = MCTS_uct_Tree(game_board)
 while game_board.state == gameState.ONGOING:
-    game.calc_best_move(max_iter=1000)
+    game.search_tree(max_iter=1000)
     move, child = game.best()
-    game.move(move)
+    game.update_state(move)
 print(game_board)
 print("winner: ", game_board.winner) 
 
@@ -47,9 +47,9 @@ for i in range(499):
     game_board = connect4_Board(6, 7, players=['X', 'O'])
     game = MCTS_uct_Tree(game_board)
     while game_board.state == gameState.ONGOING:
-        game.calc_best_move(max_iter=1000 + i*2)
+        game.search_tree(max_iter=1000 + i*2)
         move, child = game.best()
-        game.move(move)
+        game.update_state(move)
     print(game_board)
     print("winner: ", game_board.winner)    
     

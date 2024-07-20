@@ -37,6 +37,17 @@ class Player(ABC):
         """
         self.reward += reward
 
+    def inform_player(self, move: 'Move'):
+        """
+        wrapper function for update_state that receives the reward and updates the state
+
+        Args:
+            * move (Move): the move being played
+        """
+        if move.reward is not None:
+            self.recv_reward(move.reward)
+        self.update_state(move)
+
     @abstractmethod
     def get_move(self) -> 'Move':
         """
@@ -48,9 +59,9 @@ class Player(ABC):
         pass
     
     @abstractmethod
-    def move(self, move: 'Move'):
+    def update_state(self, move: 'Move'):
         """
-        informs the player of a move being played on the board
+        inner function to update player's state after a move is played
         
         Args:
             * move (Move): the move being played
@@ -303,7 +314,7 @@ class Game(ABC):
             * move (Move): the move being made
         """
         for player in self.players:
-            player.move(move)    
+            player.update_state(move)    
         
     def is_legal_move(self, move: Move) -> bool:
         """

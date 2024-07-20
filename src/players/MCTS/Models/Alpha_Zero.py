@@ -1,5 +1,5 @@
 from src.base import Move, Game, gameState
-from src.players.MCTS.Treeplayer import Node, TreePlayer, searchArgs
+from src.players.MCTS.Treeplayer import Node, TreePlayer, SArgs
 from src.players.MCTS.Models.ML_architecture.resnet import BaseRenset
 from pathlib import Path
 import inspect
@@ -16,11 +16,11 @@ from torchmetrics.classification import confusion_matrix, accuracy
 
 torch.manual_seed(0)
 
-class AZ_search_args(searchArgs):
+class AZ_search_args(SArgs):
     def __init__(self, max_iters: int = 10, max_time: float = float('inf'), max_depth: int = -1) -> None:
         super().__init__(max_iters, max_time, max_depth)
 
-class AZ_net_args:
+class AZ_NArgs:
     net: torch.nn.Module
     device: torch.device
     optimizer: torch.optim.Optimizer
@@ -41,17 +41,11 @@ class Alpha_Zero_Node(Node):
     tree_eval: torch.Tensor
 
     def __init__(self, game: Game, net: torch.nn.Module, parent: "Alpha_Zero_Node" = None, prob: float = 0, maximizer: bool = True) -> None:
-        super(Alpha_Zero_Node, self).__init__(game, parent=parent)
         self.net: BaseRenset = net
         self.self_prob = prob
         self.visits = 1
         self.maximizer = maximizer
-
-        if game is not None:    
-            with torch.no_grad():
-                self.net_eval, self.policy = self.evaluate(game)
-                self.tree_eval = self.net_eval
-                self.eval = self.net_eval.item()
+        super(Alpha_Zero_Node, self).__init__(game, parent=parent)
 
     def select_child(self):
         
@@ -74,7 +68,7 @@ class Alpha_Zero_Node(Node):
 
         return best_child  
     
-    def expand(self, game: Game) -> None:
+    def expand(self, game: Game) -> tuple[Move, "Node"]:
         for move in self.untried_actions:
             prob = self.policy[game.map_move(move)]
             if prob > 0:
@@ -86,9 +80,9 @@ class Alpha_Zero_Node(Node):
                 
         self.untried_actions = []
         
-        return random.choices(self.children, weights=self.policy[self.policy > 0], k=1)[0]
+        return (None, None)
     
-    def evaluate(self, game: Game) -> tuple[torch.Tensor, torch.Tensor]:
+    def evaluate(self, game: Game) -> float:
         value, policy = self.net.forward(torch.Tensor(game.encode()).unsqueeze(0).to(self.net.device))
         
         policy = policy.squeeze(0).detach().cpu().numpy()
@@ -97,15 +91,19 @@ class Alpha_Zero_Node(Node):
         s = np.sum(policy)
         if s > 0:
             policy /= np.sum(policy)
-        return value, policy
+
+        self.policy = policy
+        self.net_eval = value
+        return value.item()
     
     def update_rule(self, new_eval: float):
-        self.tree_eval += new_eval[0]
+        self.eval += new_eval
 
     
 class Alpha_Zero_player(TreePlayer):
     root: Alpha_Zero_Node
-    def __init__(self, game: Game, name: str, search_args: AZ_search_args, net_args: AZ_net_args) -> None:
+    net_args: AZ_NArgs
+    def __init__(self, game: Game, name: str, search_args: AZ_search_args, net_args: AZ_NArgs) -> None:
         super(Alpha_Zero_player, self).__init__(game, name, search_args)
         self.net_args = net_args
         with torch.no_grad():
@@ -119,8 +117,8 @@ class Alpha_Zero_player(TreePlayer):
     
     def create_node(self, game: Game, parent: Alpha_Zero_Node = None, action: int = 0) -> Node:
         prob = parent.policy[action] if parent is not None else 0
-        player_type = not parent.maximizer if parent is not None else True
-        return Alpha_Zero_Node(game, net=self.net_args.net, parent=parent, prob=prob, maximizer=player_type)
+        maximizer = not parent.maximizer if parent is not None else True
+        return Alpha_Zero_Node(game, net=self.net_args.net, parent=parent, prob=prob, maximizer=maximizer)
 
     def load_model(self, name: str, path: str = '') -> None:
         if path == '':
@@ -201,11 +199,12 @@ class Alpha_Zero_player(TreePlayer):
                 
                 if move is not None:
                     game.make_move(move)
-                    self.move(move)
+                    self.update_state(move)
                 else:
                     print("ERROR")
                 print(game)
         print('winner is: ', game.winner.name)
+        node: Alpha_Zero_Node | None
 
         res = game.players[0].reward
         
@@ -214,8 +213,12 @@ class Alpha_Zero_player(TreePlayer):
 
         value_labels = np.array([res])
         value_labels = value_labels.reshape((1, *value_labels.shape))
+        value_preds = np.array([node.net_eval])
+        value_preds = value_preds.reshape((1, *value_preds.shape))
         
-        policy_labels = np.array([self.root.policy])
+        true_policy = np.zeros(node.policy.shape)
+        policy_labels = np.array([true_policy])
+        policy_preds = np.array([node.policy])
 
         node = node.parent
         while node is not None:
@@ -233,13 +236,28 @@ class Alpha_Zero_player(TreePlayer):
             
             samples = np.concatenate([samples, new_sample.reshape((1, *new_sample.shape))])
             value_labels = np.concatenate([value_labels, true_value.reshape((1, *true_value.shape))])
+            value_preds = np.concatenate([value_preds, np.array([node.net_eval]).reshape((1, *np.array([node.net_eval]).shape))])
             policy_labels = np.concatenate([policy_labels, true_policy.reshape((1, *true_policy.shape))])
+            policy_preds = np.concatenate([policy_preds, np.array([node.policy])])
             
             node = node.parent
         
         return samples, value_labels, policy_labels
     
-    # def train(self, self_learn_games: int, game_train_epochs: int, decay: float = 0.9):
+    # def train(self, self_play_epochs: int = 10, per_play_epochs: int = 2, decay: float = 0.9):
+
+    #     for i in range(self_play_epochs):
+    #         # get data
+    #         self.root = None
+    #         samples, value_labels, policy_labels = self.self_play(decay)
+
+    #         # train
+    #         self.net_args.optimizer.zero_grad()
+    #         loss = self.net_args.value_crit.forward(pred, Y_train)
+    #         losses.append(loss.item())
+    #         loss.backward()
+    #         self.net_args.optimizer.step()
+
         
 
 

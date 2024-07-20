@@ -11,6 +11,6 @@ class terminalPlayer(Player):
         return self.board.create_move(input("Enter move: "))
         # self.board.make_move(move)
         
-    def move(self, move: Move):
-        pass
-        
+    def update_state(self, move: Move):
+        if move.reward is not None:
+            self.recv_reward(move.reward)
