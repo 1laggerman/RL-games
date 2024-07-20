@@ -61,6 +61,7 @@ class Node(ABC):
             if game.state != gameState.ONGOING:
                 self.is_terminal = True
             self.update_rule(self.evaluate(game))
+            self.visits = 1
 
     @abstractmethod        
     def select_child(self) -> tuple[Move, "Node"]:
@@ -84,17 +85,17 @@ class Node(ABC):
         """
         pass
             
-    @abstractmethod
-    def expand(self, game: Game, move: Move = None) -> tuple[Move, "Node"]:
-        """
-        function to be implemented by a child class
-        expands the tree by adding child node(or nodes) to this node
+    # @abstractmethod
+    # def expand(self, game: Game, move: Move = None) -> tuple[Move, "Node"]:
+    #     """
+    #     function to be implemented by a child class
+    #     expands the tree by adding child node(or nodes) to this node
         
-        Args:
-            * game (Game): The current game state
-            * move (Move, optional): The move to be explored. Defaults to None.
-        """
-        pass
+    #     Args:
+    #         * game (Game): The current game state
+    #         * move (Move, optional): The move to be explored. Defaults to None.
+    #     """
+    #     pass
 
     @abstractmethod
     def update_rule(self, new_eval: float):
@@ -107,12 +108,12 @@ class Node(ABC):
         
         Args:
             * eval (float): The evaluation to backpropagate.\n
-            override to get a different behaviour if needed
+        override to get a different behaviour if needed
         """
         self.visits += 1
         self.update_rule(eval)
 
-        if self.parent != stop_at and self.parent is not None:
+        if self != stop_at and self.parent is not None:
             self.parent.backpropagate(eval)
             
     def __str__(self) -> str:
@@ -161,7 +162,7 @@ class TreePlayer(Player, ABC):
         if self.root == None:
             if self.game is None:
                 raise ValueError("Board not set")
-            self.root = self.create_node(self.game, None)
+            self.root = self.expand(self.game, None)
             if self.start_node == None:
                 self.start_node = self.root
         
@@ -188,7 +189,7 @@ class TreePlayer(Player, ABC):
         
         while len(self.root.untried_actions) > 0:
             game = self.game
-            self.root.expand(game)
+            self.expand(game, self.root)
             # (move, node) = self.root.expand(game)
             # game.make_move(move)
             # ev = node.evaluate(game)
@@ -212,20 +213,20 @@ class TreePlayer(Player, ABC):
             ev = 0
             if not node.is_terminal:
                 if self.search_args.max_depth <= 1 or depth + 1 < self.search_args.max_depth:
-                    (move, node) = node.expand(game)
-                    depth += 1
-                    
+                    # (move, node) = node.expand(game)
+                    self.expand(game, node)
+                    if depth + 1 > curr_max_depth:
+                        curr_max_depth = depth + 1
+
             if node.is_terminal:
-                pass
+                ev = node.evaluate(game)
+                node.backpropagate(ev, stop_at=self.root)
                     
-            ev = node.evaluate(game)
             
             for d in range(depth):
                 self.game.unmake_move()
             
-            node.backpropagate(ev, stop_at=self.root)
-            if depth > curr_max_depth:
-                curr_max_depth = depth
+            # node.backpropagate(ev, stop_at=self.root)
             
             flag_time = time.time()
             if flag_time - start_time > self.search_args.max_time:
@@ -244,7 +245,7 @@ class TreePlayer(Player, ABC):
                 break
         
         if not found:
-            (move, node) = self.root.expand(self.game, move)
+            (move, node) = self.expand(self.game, node, move)
             self.root = node
         return
     
@@ -260,7 +261,7 @@ class TreePlayer(Player, ABC):
         pass
 
     @abstractmethod
-    def create_node(self, state: Game, parent: Node = None) -> Node:
+    def expand(self, state: Game, parent: Node | None = None, move: Move | None = None) -> Node:
         # TODO: refactor the change to use Board instead
         """
         function to be implemented by a child class

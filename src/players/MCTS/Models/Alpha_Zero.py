@@ -68,19 +68,19 @@ class Alpha_Zero_Node(Node):
 
         return best_child  
     
-    def expand(self, game: Game) -> tuple[Move, "Node"]:
-        for move in self.untried_actions:
-            prob = self.policy[game.map_move(move)]
-            if prob > 0:
-                game.make_move(move)
-                new_Node = Alpha_Zero_Node(game, net=self.net, parent=self, prob=prob)
-                new_child = (move, new_Node)
-                self.children.append(new_child)
-                game.unmake_move()
+    # def expand(self, game: Game) -> tuple[Move, "Node"]:
+    #     for move in self.untried_actions:
+    #         prob = self.policy[game.map_move(move)]
+    #         if prob > 0:
+    #             game.make_move(move)
+    #             new_Node = Alpha_Zero_Node(game, net=self.net, parent=self, prob=prob)
+    #             new_child = (move, new_Node)
+    #             self.children.append(new_child)
+    #             game.unmake_move()
                 
-        self.untried_actions = []
+    #     self.untried_actions = []
         
-        return (None, None)
+    #     return (None, None)
     
     def evaluate(self, game: Game) -> float:
         value, policy = self.net.forward(torch.Tensor(game.encode()).unsqueeze(0).to(self.net.device))
@@ -115,10 +115,26 @@ class Alpha_Zero_player(TreePlayer):
         else:
             return min(self.root.children, key=lambda c: c[1].eval / c[1].visits)
     
-    def create_node(self, game: Game, parent: Alpha_Zero_Node = None, action: int = 0) -> Node:
-        prob = parent.policy[action] if parent is not None else 0
-        maximizer = not parent.maximizer if parent is not None else True
-        return Alpha_Zero_Node(game, net=self.net_args.net, parent=parent, prob=prob, maximizer=maximizer)
+    def expand(self, game: Game, parent: Alpha_Zero_Node | None = None, move: Move | None = None) -> Node:
+        prob = 0
+        maximizer = True
+
+        if parent is not None:
+            maximizer = not parent.maximizer
+
+            for move in parent.untried_actions:
+                prob = parent.policy[game.map_move(move)]
+                if prob > 0:
+                    game.make_move(move)
+                    new_Node = Alpha_Zero_Node(game, net=self.net_args.net, parent=parent, prob=prob, maximizer=maximizer)
+                    parent.backpropagate(new_Node.eval, stop_at=self.root)
+                    new_child = (move, new_Node)
+                    parent.children.append(new_child)
+                    game.unmake_move()
+            
+            parent.untried_actions = []
+        else:
+            return Alpha_Zero_Node(game, net=self.net_args.net, parent=parent, prob=prob, maximizer=maximizer)
 
     def load_model(self, name: str, path: str = '') -> None:
         if path == '':

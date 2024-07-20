@@ -141,7 +141,7 @@ class MCTS_NN_Tree(TreePlayer):
         else:
             return min(self.root.children, key=lambda c: c[1].eval / c[1].visits)
         
-    def create_node(self, state: Game, parent: Node = None) -> Node:
+    def expand(self, state: Game, parent: Node = None) -> Node:
         return MCTS_NN_Node(state, parent=parent, net=self.net)
         
     def static_train(self, epochs: int, X_train: np.ndarray, Y_train: np.ndarray, save_to: str, save_as: str = "net"):

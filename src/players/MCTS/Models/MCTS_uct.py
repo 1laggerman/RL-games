@@ -93,6 +93,6 @@ class MCTS_uct_Tree(TreePlayer):
         return max(self.root.children, key=lambda c: c[1].visits if c[1].visits > 0 else 0)
         # return min(self.root.children, key=lambda c: c[1].eval / c[1].visits if c[1].visits > 0 else 0)
     
-    def create_node(self, state: Game, parent: Node = None) -> Node:
+    def expand(self, state: Game, parent: Node = None) -> Node:
         return MCTS_uct_Node(state, parent)
 

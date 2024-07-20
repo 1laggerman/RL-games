@@ -12,9 +12,6 @@ from typing import Any
 import torch
 import os
 
-# move = TicTacToe_move("0, 0")
-# print(move)
-# board = TicTacToe_Board((3, 3), players=[player(None, "O"), player(None, "X")])
 
 board = TicTacToe_Board((3, 3))
 
@@ -36,7 +33,6 @@ players = [p1, p2]
 
 
 bind(board, players)
-
 
 p1.self_play(decay=0.9)
 
