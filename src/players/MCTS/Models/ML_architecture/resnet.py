@@ -12,7 +12,7 @@ class BaseRenset(torch.nn.Module):
         self.start_block = torch.nn.Sequential(
             torch.nn.Conv2d(3, num_hidden, kernel_size=3, padding=1, device=self.device),
             torch.nn.BatchNorm2d(num_hidden, device=self.device),
-            torch.nn.Conv2d(3, num_hidden, kernel_size=3, padding=1, device=self.device),
+            torch.nn.Conv2d(num_hidden, num_hidden, kernel_size=3, padding=1, device=self.device),
             torch.nn.ReLU()
         )
         
@@ -24,8 +24,7 @@ class BaseRenset(torch.nn.Module):
             torch.nn.ReLU(),
             torch.nn.Flatten(),
             torch.nn.Linear(32 * board.board.shape[0] * board.board.shape[1], len(board.legal_moves), device=self.device), # test this
-            # torch.nn.Softmax(dim=1)
-            torch.nn.Tanh()
+            torch.nn.Softmax(dim=1),
         )
         
         self.value_head = torch.nn.Sequential(
@@ -34,6 +33,7 @@ class BaseRenset(torch.nn.Module):
             torch.nn.ReLU(),
             torch.nn.Flatten(),
             torch.nn.Linear(3 * board.board.shape[0] * board.board.shape[1], 1, device=self.device),
+            torch.nn.Tanh()
         )
     
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:

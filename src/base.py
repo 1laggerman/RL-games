@@ -4,6 +4,7 @@ import enum as Enum
 from enum import Enum
 from copy import deepcopy, copy
 from pathlib import Path
+import torch
 
 current_file_path = Path(__file__).resolve()
 
@@ -492,4 +493,16 @@ def play(game: 'Game', players: list['Player']):
         print(f"Reward: {game.reward}")
     else:
         print("Draw")
-        
+
+class Network(ABC):
+    def __init__(self, game: 'Game', players: list['Player']) -> None:
+        self.game = game
+        self.players = players
+
+    @abstractmethod
+    def evaluate(self) -> float:
+        pass
+
+    @abstractmethod
+    def update(self) -> None:
+        pass

@@ -113,7 +113,7 @@ class Node(ABC):
         self.visits += 1
         self.update_rule(eval)
 
-        if self != stop_at and self.parent is not None:
+        if self.parent is not None and self != stop_at:
             self.parent.backpropagate(eval)
             
     def __str__(self) -> str:
@@ -170,8 +170,6 @@ class TreePlayer(Player, ABC):
         for move, node in self.root.children:
             print(move, ': %.3f / %d' % (node.eval, node.visits))
         return self.best()[0]
-        
-
 
 
     def search_tree(self):
@@ -213,7 +211,6 @@ class TreePlayer(Player, ABC):
             ev = 0
             if not node.is_terminal:
                 if self.search_args.max_depth <= 1 or depth + 1 < self.search_args.max_depth:
-                    # (move, node) = node.expand(game)
                     self.expand(game, node)
                     if depth + 1 > curr_max_depth:
                         curr_max_depth = depth + 1
