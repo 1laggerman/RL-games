@@ -99,14 +99,14 @@ class Alpha_Zero_Node(Node):
     def __init__(self, game: Game, net: torch.nn.Module, parent: "Alpha_Zero_Node" = None, prob: float = 0, maximizer: bool = True) -> None:
         self.net: BaseRenset = net
         self.self_prob = prob
-        self.visits = 1
+        self.visits = 0
         self.maximizer = maximizer
         super(Alpha_Zero_Node, self).__init__(game, parent=parent)
 
     def select_child(self):
         
         # Exploration parameter
-        C = math.sqrt(2)
+        C = math.sqrt(2) # TODO: check parameter
 
         # Calculate UCT score for each child and select the child with the highest score
         best_score = float('-inf')
@@ -114,7 +114,7 @@ class Alpha_Zero_Node(Node):
         
         # exploitation = math.sqrt(self.visits)
         for child in self.children:
-            exploitation = child[1].eval / child[1].visits if self.maximizer else - child[1].eval / child[1].visits
+            exploitation = child[1].eval / child[1].visits if self.maximizer else - child[1].eval / child[1].visits # TODO: check min-max
             exploration = math.sqrt(self.visits) / (1 + child[1].visits)
             uct_score = exploitation + C * exploration * child[1].self_prob
 
@@ -122,24 +122,14 @@ class Alpha_Zero_Node(Node):
                 best_score = uct_score
                 best_child = child
 
-        if best_child is None:
-            for child in self.children:
-                exploitation = child[1].eval / child[1].visits if self.maximizer else - child[1].eval / child[1].visits
-                exploration = math.sqrt(self.visits) / (1 + child[1].visits)
-                uct_score = exploitation + C * exploration * child[1].self_prob
-
-                if uct_score > best_score:
-                    best_score = uct_score
-                    best_child = child
-
         return best_child
     
     def evaluate(self, game: Game) -> float:
+        if self.visits > 0:
+            return self.net_eval.item()
         value, policy = self.net.forward(torch.Tensor(game.encode()).unsqueeze(0).to(self.net.device))
         
-        # p = policy.squeeze(0).detach().cpu().numpy()
         legal = np.where(game.board == None, 1, 0).flatten()
-        # p *= legal
         policy *= torch.tensor(legal)
         s = torch.sum(policy)
         if s > 0:
@@ -181,44 +171,58 @@ class Alpha_Zero_player(TreePlayer):
                 if prob > 0:
                     game.make_move(move)
                     new_Node = Alpha_Zero_Node(game, net=self.net_args.net, parent=parent, prob=prob, maximizer=maximizer)
-                    parent.backpropagate(new_Node.eval, stop_at=self.root)
+                    # parent.backpropagate(new_Node.eval, stop_at=self.root)
                     new_child = (move, new_Node)
                     parent.children.append(new_child)
                     game.unmake_move()
             
             parent.untried_actions = []
+            return parent
         else:
             return Alpha_Zero_Node(game, net=self.net_args.net, parent=parent, prob=prob, maximizer=maximizer)
 
     def load_model(self, name: str, path: str = '') -> None:
         if path == '':
-            path = os.path.join(os.path.dirname(inspect.getfile(self.game.__class__)) / "Models", name)
+            path = os.path.join(os.path.dirname(inspect.getfile(self.game.__class__)), "Models", name)
 
+        optim_path = ''
         if path[-3:] != ".pt":
             path += ".pt"
+            optim_path = path + "_optim.pt"
+        else:
+            optim_path = path[-3:] + "_optim.pt"
         
         self.net_args.net.load_state_dict(torch.load(path))
+        self.net_args.optimizer.load_state_dict(torch.load(optim_path))
 
     def save_model(self, name: str, path: str = '', override: bool = False) -> None:
         if path == '':
-            path = os.path.join(os.path.dirname(inspect.getfile(self.game.__class__)) , "Models", name)
+            path = os.path.join(os.path.dirname(inspect.getfile(self.game.__class__)), "Models", name)
 
+        optim_path = ''
         if path[-3:] != ".pt":
             path += ".pt"
+            optim_path = path + "_optim.pt"
+        else:
+            optim_path = path[-3:] + "_optim.pt"
 
         base_file_name = path[-3:]
         if not override:
             i = 1
             while os.path.exists(path):
                 path = f"{base_file_name}({i}).pt"
+                optim_path = f"{base_file_name}_optim({i}).pt"
                 i += 1
         torch.save(self.net_args.net.state_dict(), path)
+        torch.save(self.net_args.optimizer.state_dict(), optim_path)
     
     def static_train(self, epochs: int, data: AZ_Data):
         losses = []
         value_losses = []
         policy_losses = []
 
+        # TODO: try shuffled data
+        # TODO: try train batches
         data.X = torch.from_numpy(data.X).float().to(self.net_args.device)
         data.policy_labels = torch.from_numpy(data.policy_labels).float().to(self.net_args.device)
         data.value_labels = torch.from_numpy(data.value_labels).float().to(self.net_args.device)
@@ -300,7 +304,6 @@ class Alpha_Zero_player(TreePlayer):
         value_labels = np.array([res])
         value_labels = value_labels.reshape((1, *value_labels.shape))
         value_preds = node.net_eval
-        # value_preds = value_preds.reshape((1, *value_preds.shape))
 
         node = node.parent
         while node is not None:
@@ -311,14 +314,8 @@ class Alpha_Zero_player(TreePlayer):
             res *= decay
             true_value = np.array([res])
             
-            # true_policy = np.zeros(node.policy.shape)
-            # for move, child in node.children:
-            #     true_policy[game.map_move(move)] = child.visits
-            # true_policy /= np.sum(true_policy)
-            
             samples = np.concatenate([new_sample.reshape((1, *new_sample.shape)), samples])
             value_labels = np.concatenate([true_value.reshape((1, *true_value.shape)), value_labels])
-            # value_preds = np.concatenate([np.array([node.net_eval]).reshape((1, *np.array([node.net_eval]).shape)), value_preds])
             value_preds = torch.cat((value_preds, node.net_eval))
 
             node = node.parent
@@ -335,7 +332,7 @@ class Alpha_Zero_player(TreePlayer):
             self.reset_tree()
             game_data = self.self_play(decay)
 
-            data = data.concat(game_data)
+            data = data.concat(game_data) # TODO: test concatination
 
         return data
     
@@ -356,9 +353,9 @@ class Alpha_Zero_player(TreePlayer):
             value_losses.extend(vl)
             policy_losses.extend(pl)
         
-        plt.plot(losses)
-        plt.plot(value_losses)
-        plt.plot(policy_losses)
+        plt.plot(losses, label='total loss')
+        plt.plot(value_losses, label='value loss')
+        plt.plot(policy_losses, label='policy loss')
         plt.show()
         
 

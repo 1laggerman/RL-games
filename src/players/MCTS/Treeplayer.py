@@ -211,13 +211,14 @@ class TreePlayer(Player, ABC):
             ev = 0
             if not node.is_terminal:
                 if self.search_args.max_depth <= 1 or depth + 1 < self.search_args.max_depth:
-                    self.expand(game, node)
+                    node = self.expand(game, node)
                     if depth + 1 > curr_max_depth:
                         curr_max_depth = depth + 1
 
             if node.is_terminal:
                 ev = node.evaluate(game)
-                node.backpropagate(ev, stop_at=self.root)
+            
+            node.backpropagate(ev, stop_at=self.root)
                     
             
             for d in range(depth):

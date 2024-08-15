@@ -18,11 +18,12 @@ board = TicTacToe_Board((3, 3))
 # p1 = MCTS_uct_Tree(board, "X")
 # p1 = humanPlayer(board, "X")
 
-SearchArgs = AZ_search_args(max_iters=12)
-net = BaseRenset(board, num_resblocks=10, num_hidden=10)
-opt = torch.optim.Adam(net.parameters(), lr=0.005, betas=(0.9, 0.999), weight_decay=0.5)
+SearchArgs = AZ_search_args(max_iters=12) # TODO: check higher max_iters
+net = BaseRenset(board, num_resblocks=4, num_hidden=64)
+opt = torch.optim.Adam(net.parameters(), lr=0.001, betas=(0.9, 0.999), weight_decay=0.2)
 value_crit = torch.nn.MSELoss()
 policy_crit = torch.nn.CrossEntropyLoss()
+
 NArgs = AZ_NArgs(net=net, optimizer=opt, value_criterion=value_crit, policy_criterion=policy_crit, device=net.device)
 p1 = Alpha_Zero_player(board, "X", SearchArgs, net_args=NArgs)
 
@@ -34,15 +35,19 @@ players = [p1, p2]
 
 bind(board, players)
 
-args = AZ_train_args(batch_epochs=5, batch_size=5, num_batches=30, reward_decay=0.9)
+p1.load_model('base')
+
+args = AZ_train_args(batch_epochs=5, batch_size=500, num_batches=10, reward_decay=0.9)
 p1.train(args)
 
-p1.save_model('base', override=True)
-# p1.self_play_batch(10, decay=0.9)
+p1.save_model('test', override=False)
 
-# a = np.zeros((3, 3))
+
+
+
 
 # A = p1.self_play(decay=0.9)
+# A = p1.self_play_batch(10, decay=0.9)
 
 # print(A)
 # # print(samples.shape, value_labels.shape, policy_labels.shape)

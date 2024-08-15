@@ -23,8 +23,8 @@ class BaseRenset(torch.nn.Module):
             torch.nn.BatchNorm2d(32, device=self.device),
             torch.nn.ReLU(),
             torch.nn.Flatten(),
-            torch.nn.Linear(32 * board.board.shape[0] * board.board.shape[1], len(board.legal_moves), device=self.device), # test this
-            torch.nn.Softmax(dim=1),
+            torch.nn.Linear(32 * board.board.shape[0] * board.board.shape[1], len(board.legal_moves), device=self.device),
+            torch.nn.Softmax(dim=1)
         )
         
         self.value_head = torch.nn.Sequential(
