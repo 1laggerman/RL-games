@@ -1,6 +1,6 @@
 from src.base import Move, Game, gameState, Network
 from src.players.MCTS.Treeplayer import Node, TreePlayer, SArgs
-from src.players.MCTS.Models.ML_architecture.resnet import BaseRenset
+from src.players.MCTS.Models.ML_architecture.resnet import BaseResnet
 from pathlib import Path
 import inspect
 
@@ -70,26 +70,6 @@ class AZ_Data:
             torch.cat([self.value_preds, other.value_preds])
         )
 
-
-# class AZ_Network(Network):
-
-#     def evaluate(self):
-#         value, policy = self.net.forward(torch.Tensor(game.encode()).unsqueeze(0).to(self.net.device))
-        
-#         policy = policy.squeeze(0).detach().cpu().numpy()
-#         legal = np.where(game.board == None, 1, 0).flatten()
-#         policy *= legal
-#         s = np.sum(policy)
-#         if s > 0:
-#             policy /= np.sum(policy)
-
-#         self.policy = policy
-#         self.net_eval = value
-#         return value.item()
-
-#     def update(self):
-#         pass
-
 class Alpha_Zero_Node(Node):
     policy: np.ndarray[float]
     self_prob: float
@@ -97,16 +77,18 @@ class Alpha_Zero_Node(Node):
     tree_eval: torch.Tensor
 
     def __init__(self, game: Game, net: torch.nn.Module, parent: "Alpha_Zero_Node" = None, prob: float = 0, maximizer: bool = True) -> None:
-        self.net: BaseRenset = net
+        self.net: BaseResnet = net
         self.self_prob = prob
         self.visits = 0
         self.maximizer = maximizer
         super(Alpha_Zero_Node, self).__init__(game, parent=parent)
 
-    def select_child(self):
+    def select_child(self, C):
         
         # Exploration parameter
-        C = math.sqrt(2) # TODO: check parameter
+        # C = math.sqrt(2) # TODO: check parameter
+        C = 2
+        
 
         # Calculate UCT score for each child and select the child with the highest score
         best_score = float('-inf')
@@ -128,16 +110,17 @@ class Alpha_Zero_Node(Node):
         if self.visits > 0:
             return self.net_eval.item()
         value, policy = self.net.forward(torch.Tensor(game.encode()).unsqueeze(0).to(self.net.device))
+        self.net_eval = value
+        self.net_policy = policy
+
+        self.policy = policy.squeeze(0).detach().cpu().numpy()
         
         legal = np.where(game.board == None, 1, 0).flatten()
-        policy *= torch.tensor(legal)
-        s = torch.sum(policy)
+        policy *= legal
+        s = np.sum(policy)
         if s > 0:
             policy /= s
 
-        self.policy = policy.squeeze(0).detach().cpu().numpy()
-        self.net_eval = value
-        self.net_policy = policy
         return value.item()
     
     def update_rule(self, new_eval: float):

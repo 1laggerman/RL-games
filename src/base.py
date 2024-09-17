@@ -223,6 +223,7 @@ class Game(ABC):
     """
     board: np.ndarray[Piece]
     legal_moves: list[Move]
+    all_moves: list[Move]
     players: list['Player']
     state: gameState
     reward: float
@@ -375,6 +376,7 @@ class Game(ABC):
         empty_state = self.board == None
         enc: np.ndarray = np.concatenate([player_states, empty_state.reshape((1, *empty_state.shape))])
         return enc.astype(np.float32)
+        # TODO: encode curr player
     
     def win(self):
         """
@@ -495,9 +497,10 @@ def play(game: 'Game', players: list['Player']):
         print("Draw")
 
 class Network(ABC):
-    def __init__(self, game: 'Game', players: list['Player']) -> None:
+    def __init__(self, game: 'Game') -> None:
         self.game = game
-        self.players = players
+        enc = self.game.encode()
+        self.in_features = enc.shape[0]
 
     @abstractmethod
     def evaluate(self) -> float:

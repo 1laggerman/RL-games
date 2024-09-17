@@ -12,11 +12,13 @@ class SArgs:
     max_iters: int
     max_time: float
     max_depth: int
+    C: float
 
-    def __init__(self, max_iters: int = 100, max_time: float = float('inf'), max_depth: int = -1) -> None:
+    def __init__(self, max_iters: int = 100, max_time: float = float('inf'), max_depth: int = -1, C: float = 2) -> None:
         self.max_iters = max_iters
         self.max_time = max_time
         self.max_depth = max_depth
+        self.C = C
         
 
 class Node(ABC):
@@ -204,7 +206,7 @@ class TreePlayer(Player, ABC):
             depth = 0
             
             while len(node.untried_actions) == 0 and not node.is_terminal:
-                (move, node) = node.select_child()
+                (move, node) = node.select_child(self.search_args.C)
                 game.make_move(move)
                 depth += 1
             
@@ -215,9 +217,8 @@ class TreePlayer(Player, ABC):
                     if depth + 1 > curr_max_depth:
                         curr_max_depth = depth + 1
 
-            if node.is_terminal:
-                ev = node.evaluate(game)
-            
+
+            ev = node.evaluate(game)
             node.backpropagate(ev, stop_at=self.root)
                     
             

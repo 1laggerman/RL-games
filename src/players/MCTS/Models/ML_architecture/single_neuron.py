@@ -10,7 +10,21 @@ class neuron(torch.nn.Module):
 
         self.value = torch.nn.Linear(board.encode().shape[0], 1)
         shape = board.encode().shape
-        self.policy = torch.nn.Linear(shape[0] * shape[1], len(board.legal_moves))
+        
+        self.backbone = torch.nn.Sequential(
+            torch.nn.Linear()
+        )
+
+        self.policy_head = torch.nn.Sequential(
+            torch.nn.Linear(32 * board.board.shape[0] * board.board.shape[1], len(board.all_moves), device=self.device),
+            torch.nn.Softmax(dim=1)
+        )
+        
+        self.value_head = torch.nn.Sequential(
+        
+            torch.nn.Linear(3 * board.board.shape[0] * board.board.shape[1], 1, device=self.device),
+            torch.nn.Tanh()
+        )
         
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return F.tanh(self.fc(x))

@@ -1,5 +1,6 @@
 from src.base import Game, Move, gameState, Player, Piece
 import os
+import numpy as np
 
 class TicTacToe_move(Move):
     """
@@ -38,6 +39,7 @@ class TicTacToe_Board(Game):
     def __init__(self, board_size: tuple, players: list = []) -> None:
         super(TicTacToe_Board, self).__init__(board_size, players)
         self.legal_moves = [TicTacToe_move(f"{i},{j}") for i in range(board_size[0]) for j in range(board_size[1])]
+        self.all_moves = self.legal_moves.copy()
     
     def create_move(self, input: str) -> Move:
         try:
@@ -105,6 +107,14 @@ class TicTacToe_Board(Game):
                 board_str += '-' * dots + '\n'
 
         return board_str
+    
+    def encode(self):
+        # if len(self.players) == 0:
+        #     return self.board
+        encoded_state = np.stack(
+            (self.board == self.players[0], self.board == None, self.board == self.players[1])
+        ).astype(np.float32)
+        return encoded_state
     
     
         

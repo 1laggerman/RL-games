@@ -4,15 +4,17 @@ import torch.nn.functional as F
 
 torch.manual_seed(0)
 
-class BaseRenset(torch.nn.Module):
-    def __init__(self, board: Game, num_resblocks: int, num_hidden: int) -> None:
+class BaseResnet(torch.nn.Module):
+    def __init__(self, num_resblocks: int, num_hidden: int) -> None:
         super().__init__()
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        # enc = board.encode().shape
         
         self.start_block = torch.nn.Sequential(
             torch.nn.Conv2d(3, num_hidden, kernel_size=3, padding=1, device=self.device),
             torch.nn.BatchNorm2d(num_hidden, device=self.device),
-            torch.nn.Conv2d(num_hidden, num_hidden, kernel_size=3, padding=1, device=self.device),
+            # torch.nn.Conv2d(num_hidden, num_hidden, kernel_size=3, padding=1, device=self.device),
             torch.nn.ReLU()
         )
         
@@ -23,7 +25,7 @@ class BaseRenset(torch.nn.Module):
             torch.nn.BatchNorm2d(32, device=self.device),
             torch.nn.ReLU(),
             torch.nn.Flatten(),
-            torch.nn.Linear(32 * board.board.shape[0] * board.board.shape[1], len(board.legal_moves), device=self.device),
+            torch.nn.Linear(32 * 3 * 3, 9, device=self.device),
             torch.nn.Softmax(dim=1)
         )
         
@@ -32,7 +34,7 @@ class BaseRenset(torch.nn.Module):
             torch.nn.BatchNorm2d(3, device=self.device),
             torch.nn.ReLU(),
             torch.nn.Flatten(),
-            torch.nn.Linear(3 * board.board.shape[0] * board.board.shape[1], 1, device=self.device),
+            torch.nn.Linear(3 * 3 * 3, 1, device=self.device),
             torch.nn.Tanh()
         )
     
@@ -42,7 +44,7 @@ class BaseRenset(torch.nn.Module):
             x = resBlock(x)
         policy = self.policy_head(x)
         value = self.value_head(x)
-        return value, policy
+        return policy, value
 
 
 class ResBlock(torch.nn.Module):
