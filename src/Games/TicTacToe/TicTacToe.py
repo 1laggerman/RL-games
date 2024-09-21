@@ -36,8 +36,8 @@ class TicTacToe_Board(Game):
     
     legal_moves: list[TicTacToe_move]
     
-    def __init__(self, board_size: tuple, players: list = []) -> None:
-        super(TicTacToe_Board, self).__init__(board_size, players)
+    def __init__(self, board_size: tuple) -> None:
+        super(TicTacToe_Board, self).__init__(board_size)
         self.legal_moves = [TicTacToe_move(f"{i},{j}") for i in range(board_size[0]) for j in range(board_size[1])]
         self.all_moves = self.legal_moves.copy()
     

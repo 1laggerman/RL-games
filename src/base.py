@@ -8,6 +8,8 @@ import torch
 
 current_file_path = Path(__file__).resolve()
 
+
+# TODO: add pieace wrapper class to hold pieaces of the same type for more effeicient encoding
 class Player(ABC):
     """
     A basic abstract player class
@@ -48,6 +50,16 @@ class Player(ABC):
         if move.reward is not None:
             self.recv_reward(move.reward)
         self.update_state(move)
+
+    def encode(self) -> np.ndarray:
+        """
+        returns the encoding of the player pieaces
+
+        Returns:
+            * np.ndarray: the encoding of the player
+        """
+        return np.array([self.board == piece for piece in self.pieces])
+
 
     @abstractmethod
     def get_move(self) -> 'Move':
@@ -362,19 +374,26 @@ class Game(ABC):
         self.reverse_state(move)
         self.prev_player()
     
-    def encode(self) -> np.ndarray:
+    def encode(self, perspective: Player = None) -> np.ndarray:
         """
         encodes the board to a numpy array for use of neural network models
         
-        defualt encoding:
+        defualt encoding(None perspective):
         -----------------
+            - layer for empty space
             - layer for each pieace, ordered by player\n
-            - layer for empty spaces\n
+        defualt encoding(with perspective):
+        -----------------
+            - layer for perspective player pieaces
+            - layer for empty space
+            - layer for each pieace, ordered by player\n
         """
-        board = deepcopy(self.board)
-        player_states = np.array([board == player for player in self.players])
+        player_states = np.array([player.encode() for player in self.players if player != perspective])
         empty_state = self.board == None
-        enc: np.ndarray = np.concatenate([player_states, empty_state.reshape((1, *empty_state.shape))])
+        layers = [player_states, empty_state.reshape((1, *empty_state.shape))]
+        if perspective is not None:
+            layers.append(perspective.encode())
+        enc: np.ndarray = np.concatenate(layers)
         return enc.astype(np.float32)
         # TODO: encode curr player
     
