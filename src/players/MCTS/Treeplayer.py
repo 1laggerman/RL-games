@@ -56,7 +56,7 @@ class Node(ABC):
         self.eval = 0
         self.parent = parent
         self.children = list()
-        self.player = game.curr_player
+        self.player = game.curr_role
         self.is_terminal = False
         
         if game is not None:

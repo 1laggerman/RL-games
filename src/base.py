@@ -8,29 +8,31 @@ import torch
 
 current_file_path = Path(__file__).resolve()
 
-class Player(ABC):
+class gameState(Enum):
     """
-    A basic abstract player class
+    Enum to represent the state of the game
     
-    Args:
-        game_board (Board): the board the player is playing on
-        name (str): the name of the player
-        pieces (list[piece]): the pieces the player has (init to [])
+    Attributes:
+    -----------
+        ENDED: the game has ended
+        DRAW: the game ended in a draw
+        ONGOING: the game is still ongoing
+    """
+    ENDED = 'E'
+    DRAW = 'D'
+    ONGOING = 'P'
 
-    Abstract methods to implement:
-        get_move(self) -> Move
-        move(self, move: Move) -> None
-    """
-    board: 'Game'
-    name: str
-    reward: float
+class Role():
     pieces: list['Piece']
-    
-    def __init__(self, game_board: 'Game', name: str) -> None:
-        self.board = game_board
+    reward: float
+    name: str
+    player: 'Player'
+
+    def __init__(self, name: str, pieces: list['Piece'] = [], initial_reward: float = 0, player: 'Player' = None) -> None:
         self.name = name
-        self.reward = 0
-        self.pieces = []
+        self.reward = initial_reward
+        self.pieces = pieces.copy()
+        self.player = player
 
     def recv_reward(self, reward: float):
         """
@@ -47,7 +49,44 @@ class Player(ABC):
         """
         if move.reward is not None:
             self.recv_reward(move.reward)
-        self.update_state(move)
+        self.player.update_state(move)
+
+    def get_move(self) -> 'Move':
+        """
+        chooses a move to be played using self.board
+
+        Returns:
+            * Move: the move to be played
+        """
+        if self.player is None:
+            return None
+        return self.player.get_move()
+    
+    def __str__(self) -> str:
+        return self.name
+    
+    def __repr__(self) -> str:
+        return str(self)
+
+class Player(ABC):
+    """
+    A basic abstract player class
+    
+    Args:
+        game_board (Board): the board the player is playing on
+        name (str): the name of the player
+        pieces (list[piece]): the pieces the player has (init to [])
+
+    Abstract methods to implement:
+        get_move(self) -> Move
+        move(self, move: Move) -> None
+    """
+    name: str
+    role: Role
+    
+    def __init__(self, game: 'Game', name: str) -> None:
+        self.game = game
+        self.name = name
 
     @abstractmethod
     def get_move(self) -> 'Move':
@@ -68,20 +107,6 @@ class Player(ABC):
             * move (Move): the move being played
         """
         pass
-        
-class gameState(Enum):
-    """
-    Enum to represent the state of the game
-    
-    Attributes:
-    -----------
-        ENDED: the game has ended
-        DRAW: the game ended in a draw
-        ONGOING: the game is still ongoing
-    """
-    ENDED = 'E'
-    DRAW = 'D'
-    ONGOING = 'P'
     
 class Piece(ABC):
     """
@@ -93,19 +118,21 @@ class Piece(ABC):
         * location (tuple[int]): location of the piece on the board
     """
     name: str
-    player: 'Player'
+    role: Role
     location: tuple[int]
     
-    def __init__(self, name: str, player: 'Player', location: tuple[int]) -> None:
-        self.player = player
+    def __init__(self, name: str, role: Role, location: tuple[int]) -> None:
+        self.role = role
         self.name = name
         self.location = location
         
     def __eq__(self, other) -> bool:
         if isinstance(other, Piece):
             return self.name == other.name
+        elif isinstance(other, Role):
+            return self.role.name == other.name
         elif isinstance(other, Player):
-            return self.player.name == other.name
+            return self.role.name == other.role.name
         elif isinstance(other, str):
             return self.name == other
             
@@ -122,7 +149,7 @@ class Piece(ABC):
         cls = self.__class__
         result = cls.__new__(cls)
         result.name = self.name
-        result.player = self.player
+        result.role = self.role
         result.location = copy(self.location)
         return result
 
@@ -224,30 +251,27 @@ class Game(ABC):
     board: np.ndarray[Piece]
     legal_moves: list[Move]
     all_moves: list[Move]
-    players: list['Player']
+    # players: list['Player'] = []
+    roles: list[Role] = []
     state: gameState
-    reward: float
-    winner: 'Player'
-    curr_player_idx: int
-    curr_player: 'Player'
+    winner: 'Role'
+    curr_role_idx: int
+    curr_role: 'Role'
     history: list[Move]
     
-    def __init__(self, board_size: tuple, players: list['Player'] = []) -> None:
+    def __init__(self, board_size: tuple, roles: list[Role]) -> None:
         super().__init__()
         self.state = gameState.ONGOING
         self.history = []
         self.board = np.full(board_size, fill_value=None, dtype=object)
         self.reward = 0
     
-        self.players = players
-        
-        for p in self.players:
-            p.board = self
+        self.roles = roles
             
         self.winner = None
-        self.curr_player_idx = 0
-        if len(players) > 0:
-            self.curr_player = players[0]
+        self.curr_role_idx = 0
+        if len(roles) > 0:
+            self.curr_role = roles[0]
             
     @abstractmethod
     def create_move(self, input: str) -> Move:
@@ -279,7 +303,7 @@ class Game(ABC):
         -----------------
             * self.board - update board matrix visuals\n
             * self.legal_moves - update legal moves according to your game\n
-            * self.reward - update the total reward from this game\n
+            * self.reward - send rewards to players\n
             * self.state - is the game over?\n
             * self.winner - if the game is over - update winner\n
             
@@ -315,8 +339,8 @@ class Game(ABC):
         -----
             * move (Move): the move being made
         """
-        for player in self.players:
-            player.update_state(move)    
+        for role in self.roles:
+            role.inform_player(move)  
         
     def is_legal_move(self, move: Move) -> bool:
         """
@@ -336,15 +360,15 @@ class Game(ABC):
         """
         calculates the next player by incrementing the current player index and updating the current player
         """
-        self.curr_player_idx = (self.curr_player_idx + 1) % len(self.players)
-        self.curr_player = self.players[self.curr_player_idx]
+        self.curr_role_idx = (self.curr_role_idx + 1) % len(self.roles)
+        self.curr_role = self.roles[self.curr_role_idx]
         
     def prev_player(self):
         """
         calculates the previous player by decrementing the current player index and updating the current player
         """
-        self.curr_player_idx = (self.curr_player_idx - 1) % len(self.players)
-        self.curr_player = self.players[self.curr_player_idx]
+        self.curr_role_idx = (self.curr_role_idx - 1) % len(self.roles)
+        self.curr_role = self.roles[self.curr_role_idx]
         
     def make_move(self, move: Move):
         """
@@ -354,7 +378,7 @@ class Game(ABC):
         self.update_state(move)
         self.next_player()
     
-    def unmake_move(self, move: Move = None):
+    def unmake_move(self):
         """
         shell function to unmake a move, removes the last move from history, calls reverse_state, and updates curr_player
         """
@@ -371,8 +395,8 @@ class Game(ABC):
             - layer for each pieace, ordered by player\n
             - layer for empty spaces\n
         """
-        board = deepcopy(self.board)
-        player_states = np.array([board == player for player in self.players])
+        # board = deepcopy(self.board)
+        player_states = np.array([self.board == role for role in self.roles])
         empty_state = self.board == None
         enc: np.ndarray = np.concatenate([player_states, empty_state.reshape((1, *empty_state.shape))])
         return enc.astype(np.float32)
@@ -383,13 +407,13 @@ class Game(ABC):
         turns the game to a win for the current player
         """
         self.state = gameState.ENDED
-        self.winner = self.curr_player
+        self.winner = self.curr_role
         self.reward = 1
-        for player in self.players:
-            if player == self.winner:
-                player.recv_reward(self.reward)
+        for role in self.roles:
+            if role == self.winner:
+                role.recv_reward(self.reward)
             else:
-                player.recv_reward(-self.reward)
+                role.recv_reward(-self.reward)
         
     def draw(self):
         """
@@ -397,15 +421,15 @@ class Game(ABC):
         """
         self.state = gameState.DRAW
         self.reward = 0
-        for player in self.players:
-            player.recv_reward(self.reward)
+        for role in self.roles:
+            role.recv_reward(self.reward)
         
     def lose(self):
         """
         turns the game to a loss for the current player
         """
         self.state = gameState.ENDED
-        self.winner = self.players[self.curr_player_idx - 1]
+        self.winner = self.players[self.curr_role_idx - 1]
         self.reward = -1
         for player in self.players:
             if player == self.winner:
@@ -445,8 +469,8 @@ class Game(ABC):
         result.history = deepcopy(self.history)
         result.state = self.state
         result.reward = self.reward
-        result.curr_player_idx = self.curr_player_idx
-        result.curr_player = self.curr_player
+        result.roles = self.roles
+        result.curr_role = self.curr_role
         result.players = self.players
         result.winner = self.winner
         
@@ -467,10 +491,10 @@ def bind(game: 'Game', players: list['Player']):
         return
     
     game.players = players
-    game.curr_player = players[game.curr_player_idx]
+    game.curr_role = players[game.curr_role_idx]
     
     for player in players:
-        player.board = game
+        player.game = game
 
 def play(game: 'Game', players: list['Player']):
     """
@@ -483,7 +507,7 @@ def play(game: 'Game', players: list['Player']):
     """
     bind(game, players)
     while game.state == gameState.ONGOING:
-        move = game.curr_player.get_move()
+        move = game.curr_role.get_move()
         if move is None:
             print("Invalid move")
             return

@@ -51,22 +51,22 @@ class hex_Board(Game):
     def update_state(self, move: hex_Move):
         links = self.get_links(move)
         for link in links:
-            if self.linked_to_edge[self.curr_player_idx, 0, *link.location]:
-                self.linked_to_edge[self.curr_player_idx, 0, *move.location] = True
-            if self.linked_to_edge[self.curr_player_idx, 1, *link.location]:
-                self.linked_to_edge[self.curr_player_idx, 1, *move.location] = True
+            if self.linked_to_edge[self.curr_role_idx, 0, *link.location]:
+                self.linked_to_edge[self.curr_role_idx, 0, *move.location] = True
+            if self.linked_to_edge[self.curr_role_idx, 1, *link.location]:
+                self.linked_to_edge[self.curr_role_idx, 1, *move.location] = True
         
-        if np.all(self.linked_to_edge[self.curr_player_idx, :, *move.location]):
+        if np.all(self.linked_to_edge[self.curr_role_idx, :, *move.location]):
             self.state = gameState.ENDED
-            self.winner = self.curr_player
+            self.winner = self.curr_role
             return
             
-        if move.location[self.curr_player_idx] == 0:
-            self.linked_to_edge[self.curr_player_idx, 0, *move.location] = True
-        elif move.location[self.curr_player_idx] == self.board.shape[self.curr_player_idx] - 1:
-            self.linked_to_edge[self.curr_player_idx, 1, *move.location] = True    
+        if move.location[self.curr_role_idx] == 0:
+            self.linked_to_edge[self.curr_role_idx, 0, *move.location] = True
+        elif move.location[self.curr_role_idx] == self.board.shape[self.curr_role_idx] - 1:
+            self.linked_to_edge[self.curr_role_idx, 1, *move.location] = True    
             
-        found_edges = self.linked_to_edge[self.curr_player_idx, :, *move.location]
+        found_edges = self.linked_to_edge[self.curr_role_idx, :, *move.location]
         for i, edge in enumerate(found_edges):
             if edge == True:
                 self.dynamic_BFS(move, i)
@@ -77,13 +77,13 @@ class hex_Board(Game):
         while q.__len__() > 0:
             m = q.popleft()
             for link in self.get_links(m):
-                if self.linked_to_edge[self.curr_player_idx, edge, *link.location] == False:
-                    self.linked_to_edge[self.curr_player_idx, edge, *link.location] = True
+                if self.linked_to_edge[self.curr_role_idx, edge, *link.location] == False:
+                    self.linked_to_edge[self.curr_role_idx, edge, *link.location] = True
                     # root.changed_links.append(link)
                     
-                    if np.all(self.linked_to_edge[self.curr_player_idx, :, *link.location]):
+                    if np.all(self.linked_to_edge[self.curr_role_idx, :, *link.location]):
                         self.state = gameState.ENDED
-                        self.winner = self.curr_player
+                        self.winner = self.curr_role
                         return
                     
                     q.append(link)
@@ -95,11 +95,11 @@ class hex_Board(Game):
         for n in neighbors:
             link = move + n
             if link.location[0] >= 0 and link.location[1] >= 0 and link.location[0] < self.board.shape[1] and link.location[1] < self.board.shape[0]:
-                if self.board[link.location] == self.curr_player.name:
+                if self.board[link.location] == self.curr_role.name:
                     links.append(move + n)
             link = move - n
             if link.location[0] >= 0 and link.location[1] >= 0 and link.location[0] < self.board.shape[1] and link.location[1] < self.board.shape[0]:
-                if self.board[link.location] == self.curr_player.name:
+                if self.board[link.location] == self.curr_role.name:
                     links.append(move - n)
         return links
         

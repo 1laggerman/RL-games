@@ -49,7 +49,7 @@ class MCTS_uct_Node(Node):
         new_Node = MCTS_uct_Node(state=board, parent=self)
         if board.state == gameState.ENDED or board.state == gameState.DRAW:
             new_Node.is_terminal = True
-            new_Node.player = board.curr_player
+            new_Node.player = board.curr_role
 
         new_Node.evaluate(board)
         

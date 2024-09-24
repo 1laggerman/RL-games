@@ -1,0 +1,14 @@
+Notice:
+    - replaced policy and value in net eval return. remember to switch back when testing my model
+
+Issues:
+    - dont use softmax to train policy
+    - use model.train() from torch to put batchnorm into affect
+    - train batch/more epochs
+
+ideas:    
+    - revert to net output relative to curr player and not static(or allow both)
+
+Add:
+    - Tests
+    - GUI (pygame)

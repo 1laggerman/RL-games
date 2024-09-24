@@ -1,4 +1,4 @@
-from src.base import Game, Move, gameState, Player, Piece
+from src.base import Game, Move, gameState, Piece, Role
 import os
 import numpy as np
 
@@ -20,7 +20,7 @@ class TicTacToe_move(Move):
         return self.dest_location[0] == __value.dest_location[0] and self.dest_location[1] == __value.dest_location[1]
         
 
-class TicTacToe_Board(Game):
+class TicTacToe_Game(Game):
     """
     A TicTacToe game board.
 
@@ -36,9 +36,9 @@ class TicTacToe_Board(Game):
     
     legal_moves: list[TicTacToe_move]
     
-    def __init__(self, board_size: tuple, players: list = []) -> None:
-        super(TicTacToe_Board, self).__init__(board_size, players)
-        self.legal_moves = [TicTacToe_move(f"{i},{j}") for i in range(board_size[0]) for j in range(board_size[1])]
+    def __init__(self) -> None:
+        super(TicTacToe_Game, self).__init__((3, 3), [Role('X'), Role('O')])
+        self.legal_moves = [TicTacToe_move(f"{i},{j}") for i in range(3) for j in range(3)]
         self.all_moves = self.legal_moves.copy()
     
     def create_move(self, input: str) -> Move:
@@ -52,7 +52,11 @@ class TicTacToe_Board(Game):
         x = last_move.dest_location[0]
         y = last_move.dest_location[1]
         
-        self.board[last_move.dest_location] = Piece(self.curr_player.name, self.curr_player, location=last_move.dest_location)
+        p = Piece(self.curr_role.name, self.curr_role, location=last_move.dest_location)
+
+        self.curr_role.pieces.append(p)
+        self.board[last_move.dest_location] = p
+
         self.legal_moves.remove(last_move)
         directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
 
@@ -69,7 +73,7 @@ class TicTacToe_Board(Game):
             move = TicTacToe_move(f"{loc[0]},{loc[1]}")
             while move.dest_location[0] >= 0 and move.dest_location[0] < self.board.shape[0] and move.dest_location[1] >= 0 and move.dest_location[1] < self.board.shape[1]:
                 location: Piece = self.board[loc[0] + i * dx, loc[1] + i * dy]
-                if location is None or location.name != self.curr_player.name:
+                if location is None or location.name != self.curr_role.name:
                     break
                 i += 1
                 move.dest_location = (loc[0] + i * dx, loc[1] + i * dy)
@@ -87,8 +91,8 @@ class TicTacToe_Board(Game):
         self.state = gameState.ONGOING
         self.winner = None
         self.reward = 0
-        for player in self.players:
-            player.reward = 0
+        for role in self.roles:
+            role.reward = 0
         
     def __str__(self):
         board_str = ''
@@ -109,12 +113,7 @@ class TicTacToe_Board(Game):
         return board_str
     
     def encode(self):
-        # if len(self.players) == 0:
-        #     return self.board
         encoded_state = np.stack(
-            (self.board == self.players[0], self.board == None, self.board == self.players[1])
+            (self.board == self.roles[0], self.board == None, self.board == self.roles[1])
         ).astype(np.float32)
         return encoded_state
-    
-    
-        

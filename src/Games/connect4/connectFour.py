@@ -44,7 +44,7 @@ class connect4_Board(Game):
         row = self.cols_heights[move.location]
         col = move.location
         
-        self.board[row, col] = Piece(self.curr_player.name, self.curr_player, location=(row, col))
+        self.board[row, col] = Piece(self.curr_role.name, self.curr_role, location=(row, col))
         self.cols_heights[move.location] = self.cols_heights[move.location] + 1
         
         if self.cols_heights[move.location] == self.rows():
@@ -91,7 +91,7 @@ class connect4_Board(Game):
         y = last_move.location
         x = self.cols_heights[last_move.location] - 1
         
-        player = self.curr_player
+        player = self.curr_role
         directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
 
         for dx, dy in directions:

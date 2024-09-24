@@ -6,9 +6,9 @@ class terminalPlayer(Player):
         super().__init__(game_board, name)
 
     def get_move(self):
-        print(self.board)
-        print(f"legal moves: {self.board.legal_moves}")
-        return self.board.create_move(input("Enter move: "))
+        print(self.game)
+        print(f"legal moves: {self.game.legal_moves}")
+        return self.game.create_move(input("Enter move: "))
         # self.board.make_move(move)
         
     def update_state(self, move: Move):
