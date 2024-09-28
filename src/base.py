@@ -65,6 +65,13 @@ class Role():
             return None
         return self.player.get_move()
     
+    def __eq__(self, value: object) -> bool:
+        if isinstance(value, Role):
+            return self.name == value.name
+        elif isinstance(value, str):
+            return self.name == value
+        return False
+    
     def __str__(self) -> str:
         return self.name
     
