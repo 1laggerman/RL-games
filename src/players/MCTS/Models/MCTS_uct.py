@@ -45,7 +45,7 @@ class MCTS_uct_Node(Node):
         if move is None or move not in self.untried_actions:
             new_action = self.untried_actions.pop()
         
-        board.make_move(new_action)
+        board.make_action(new_action)
         new_Node = MCTS_uct_Node(state=board, parent=self)
         if board.state == gameState.ENDED or board.state == gameState.DRAW:
             new_Node.is_terminal = True
@@ -53,7 +53,7 @@ class MCTS_uct_Node(Node):
 
         new_Node.evaluate(board)
         
-        board.unmake_move()
+        board.unmake_action()
         new_child = (new_action, new_Node)
         self.children.append(new_child)
         return new_child
@@ -61,9 +61,9 @@ class MCTS_uct_Node(Node):
     def evaluate(self, board: Game):
         board = deepcopy(board)
         while board.state is not gameState.DRAW and board.state is not gameState.ENDED:
-            choices = [i for i in range(board.legal_moves.__len__())]
+            choices = [i for i in range(board.legal_actions.__len__())]
             move_idx = random.choice(choices)
-            board.make_move(board.legal_moves[move_idx])
+            board.make_action(board.legal_actions[move_idx])
         
         if board.state == gameState.DRAW:
             board.draw()

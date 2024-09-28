@@ -7,8 +7,8 @@ class terminalPlayer(Player):
 
     def get_move(self):
         print(self.game)
-        print(f"legal moves: {self.game.legal_moves}")
-        return self.game.create_move(input("Enter move: "))
+        print(f"legal moves: {self.game.legal_actions}")
+        return self.game.create_action(input("Enter move: "))
         
     def update_state(self, action: Action):
         pass

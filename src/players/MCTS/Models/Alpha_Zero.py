@@ -152,12 +152,12 @@ class Alpha_Zero_player(TreePlayer):
             for move in parent.untried_actions:
                 prob = parent.policy[game.map_move(move)]
                 if prob > 0:
-                    game.make_move(move)
+                    game.make_action(move)
                     new_Node = Alpha_Zero_Node(game, net=self.net_args.net, parent=parent, prob=prob, maximizer=maximizer)
                     # parent.backpropagate(new_Node.eval, stop_at=self.root)
                     new_child = (move, new_Node)
                     parent.children.append(new_child)
-                    game.unmake_move()
+                    game.unmake_action()
             
             parent.untried_actions = []
             return parent
@@ -267,7 +267,7 @@ class Alpha_Zero_player(TreePlayer):
             move, node = random.choices(self.root.children, weights=self.root.policy[self.root.policy > 0], k=1)[0] # explore different moves for train
 
             if move is not None:
-                game.make_move(move)
+                game.make_action(move)
                 self.update_state(move)
             else:
                 print("ERROR")
@@ -290,7 +290,7 @@ class Alpha_Zero_player(TreePlayer):
 
         node = node.parent
         while node is not None:
-            game.unmake_move()
+            game.unmake_action()
             
             new_sample = game.encode()
             

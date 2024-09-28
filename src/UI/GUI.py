@@ -82,7 +82,7 @@ def pygame_play(game: Game):
                 print(pos)
                 in_str = str(pos[0]) + ', ' + str(pos[1])
                 try:
-                    game.make_move(game.create_move(in_str))
+                    game.make_action(game.create_action(in_str))
                 except Exception as e:
                     print(e.with_traceback())
                     running = False

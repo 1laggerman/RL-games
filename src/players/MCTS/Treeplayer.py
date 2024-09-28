@@ -51,7 +51,7 @@ class Node(ABC):
     is_terminal: bool = False
     
     def __init__(self, game: Game, parent: "Node" = None) -> None:
-        self.untried_actions = game.legal_moves.copy()
+        self.untried_actions = game.legal_actions.copy()
         self.visits = 0
         self.eval = 0
         self.parent = parent
@@ -207,7 +207,7 @@ class TreePlayer(Player, ABC):
             
             while len(node.untried_actions) == 0 and not node.is_terminal:
                 (move, node) = node.select_child(self.search_args.C)
-                game.make_move(move)
+                game.make_action(move)
                 depth += 1
             
             ev = 0
@@ -223,7 +223,7 @@ class TreePlayer(Player, ABC):
                     
             
             for d in range(depth):
-                self.game.unmake_move()
+                self.game.unmake_action()
             
             # node.backpropagate(ev, stop_at=self.root)
             

@@ -28,17 +28,17 @@ class connect4_Board(Game):
         self.legal_moves = [connect4_Move(f"{i}", loc=i) for i in range(cols)]
         self.cols_heights = [0 for i in range(cols)]
     
-    def create_move(self, input: str) -> Action:
+    def create_action(self, input: str) -> Action:
         try:
             loc = int(input)
             move = connect4_Move(input, loc)
-            if self.is_legal_move(move):
+            if self.is_legal_action(move):
                 return move
         except:
             pass
         return None
     
-    def make_move(self, move: connect4_Move):
+    def make_action(self, move: connect4_Move):
         self.history.append(move)
         
         row = self.cols_heights[move.location]
@@ -53,7 +53,7 @@ class connect4_Board(Game):
         self.update_state(move)
         self.next_player()
     
-    def unmake_move(self, move: connect4_Move = None):
+    def unmake_action(self, move: connect4_Move = None):
         if move == None:
             move = self.history.pop()
         self.board[self.cols_heights[move.location] - 1, move.location] = None

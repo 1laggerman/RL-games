@@ -39,10 +39,10 @@ class hex_Board(Game):
         self.legal_moves = [hex_Move(f"{i} {j}", loc=(i, j)) for i, j in it.product(range(size), repeat=2)]
         self.linked_to_edge = np.zeros((players.__len__(), 2, size, size), dtype=bool)
         
-    def create_move(self, input: str) -> Action:
+    def create_action(self, input: str) -> Action:
         try:
             move = hex_Move(input, tuple(int(num) for num in input.split(' ')))
-            if self.is_legal_move(move):
+            if self.is_legal_action(move):
                 return move
         except:
             pass

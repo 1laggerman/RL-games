@@ -14,7 +14,7 @@ game_board = connect4_Board(6, 7, players=['X', 'O'])
 
 
 while game_board.state == gameState.ONGOING:
-    game_board.make_move(random.choice(game_board.legal_moves))
+    game_board.make_action(random.choice(game_board.legal_moves))
 
 # game = MCTS_uct_Tree(game_board)
 # game.move(random.choice(game.board.legal_moves))

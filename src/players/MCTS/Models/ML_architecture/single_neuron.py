@@ -16,7 +16,7 @@ class neuron(torch.nn.Module):
         )
 
         self.policy_head = torch.nn.Sequential(
-            torch.nn.Linear(32 * board.board.shape[0] * board.board.shape[1], len(board.all_moves), device=self.device),
+            torch.nn.Linear(32 * board.board.shape[0] * board.board.shape[1], len(board.all_actions), device=self.device),
             torch.nn.Softmax(dim=1)
         )
         

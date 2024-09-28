@@ -4,7 +4,7 @@ import numpy as np
 from src.base import Game, Action, gameState, Piece, Role
 from src.Games.connect4.connectFour import connect4_Board
 from src.Games.hex.hex import hex_Board
-from src.Games.TicTacToe.TicTacToe import TicTacToe_Game, TicTacToe_move
+from src.Games.TicTacToe.TicTacToe import TicTacToe_Game, TicTacToe_Action
 
 class TestTicTacToe(unittest.TestCase):
 
@@ -16,10 +16,10 @@ class TestTicTacToe(unittest.TestCase):
 
         moves = []
         for i in range(9):
-            moves.append(TicTacToe_move(f"{i // 3}, {i % 3}"))
+            moves.append(TicTacToe_Action(f"{i // 3}, {i % 3}"))
             self.assertTrue(moves[i] in game.legal_moves)
 
-        self.assertEqual(game.all_moves, moves)
+        self.assertEqual(game.all_actions, moves)
 
         xRole = Role('X')
         oRole = Role('O')
@@ -37,9 +37,9 @@ class TestTicTacToe(unittest.TestCase):
     def test_makeMove(self):
         game = TicTacToe_Game()
 
-        move = TicTacToe_move("0,0")
+        move = TicTacToe_Action("0,0")
 
-        game.make_move(move)
+        game.make_action(move)
 
         self.assertFalse(np.all(game.board == None))
         self.assertEqual(game.board[0, 0], Piece('X', game.roles[0], location=(0, 0)))
@@ -48,7 +48,7 @@ class TestTicTacToe(unittest.TestCase):
 
         moves = []
         for i in range(1, 9):
-            moves.append(TicTacToe_move(f"{i % 3},{i // 3}"))
+            moves.append(TicTacToe_Action(f"{i % 3},{i // 3}"))
             self.assertTrue(moves[i - 1] in game.legal_moves)
 
         self.assertEqual(game.roles[0].pieces, [Piece('X', game.roles[0], location=(0, 0))])
@@ -63,11 +63,11 @@ class TestTicTacToe(unittest.TestCase):
     def testUnmakeMove(self):
         game = TicTacToe_Game()
 
-        move = TicTacToe_move("0,0")
+        move = TicTacToe_Action("0,0")
 
-        game.make_move(move)
+        game.make_action(move)
 
-        game.unmake_move()
+        game.unmake_action()
 
         self.assertTrue(np.all(game.board == None))
 
@@ -75,7 +75,7 @@ class TestTicTacToe(unittest.TestCase):
 
         moves = []
         for i in range(9):
-            moves.append(TicTacToe_move(f"{i % 3},{i // 3}"))
+            moves.append(TicTacToe_Action(f"{i % 3},{i // 3}"))
             self.assertTrue(moves[i] in game.legal_moves)
 
         self.assertEqual(game.roles[0].pieces, [Piece('X', game.roles[0], location=(0, 0))])

@@ -131,7 +131,7 @@ class Piece(ABC):
     role: Role
     location: tuple[int]
     
-    def __init__(self, name: str, role: Role, location: tuple[int]) -> None:
+    def __init__(self, name: str, role: Role, location: tuple[int] = None) -> None:
         self.role = role
         self.name = name
         self.location = location
@@ -168,7 +168,7 @@ class Move:
     src_location: tuple[int]
     dest_location: tuple[int]
     
-    def __init__(self, moved_piece: Piece, to_location: tuple[int]) -> None:
+    def __init__(self, moved_piece: Piece, to_location: tuple[int] | None) -> None:
         self.moved_piece = moved_piece
         self.src_location = moved_piece.location
         self.dest_location = to_location
@@ -186,14 +186,15 @@ class Action(ABC):
         * dest_location: tuple[int]: the square where the piece is moved to
     """
     name: str
+    action_taker: Role
     affects: list[Move]
     reward: list[tuple[Role, float]]
-    piece: Piece
     
-    def __init__(self, name: str, reward: list[tuple[Role, float]] = []) -> None:
+    def __init__(self, name: str, action_taker: Role, reward: list[tuple[Role, float]] = []) -> None:
         super(Action, self).__init__()
         self.name = name.replace(" ", "") # clean move name
         self.reward = reward.copy()
+        self.affects = []
         
     def __eq__(self, __value: "Action") -> bool:
         return self.name == __value.name
@@ -268,10 +269,9 @@ class Game(ABC):
             reverses the given move\n
     """
     board: np.ndarray[Piece]
-    legal_moves: list[Action]
-    all_moves: list[Action]
-    # players: list['Player'] = []
-    roles: list[Role] = []
+    legal_actions: list[Action]
+    all_actions: list[Action]
+    roles: list[Role]
     state: gameState
     winner: 'Role'
     curr_role_idx: int
@@ -283,7 +283,6 @@ class Game(ABC):
         self.state = gameState.ONGOING
         self.history = []
         self.board = np.full(board_size, fill_value=None, dtype=object)
-        self.reward = 0
     
         self.roles = roles
             
@@ -293,7 +292,7 @@ class Game(ABC):
             self.curr_role = roles[0]
             
     @abstractmethod
-    def create_move(self, input: str) -> Action:
+    def create_action(self, input: str) -> Action:
         """
         function to be implemented by a child class
         creates a move from input of the specific child class
@@ -309,7 +308,7 @@ class Game(ABC):
         pass        
     
     @abstractmethod
-    def update_state(self, move: Action) -> float:
+    def update_state(self, action: Action) -> float:
         """
         function to be implemented by a child class
         updates self object after a move is made
@@ -333,7 +332,7 @@ class Game(ABC):
         pass
     
     @abstractmethod
-    def reverse_state(self, move: Action):
+    def reverse_state(self, action: Action):
         """
         function to be implemented by a child class
         this function is the reverse of update_state.
@@ -350,7 +349,7 @@ class Game(ABC):
         """
         pass
     
-    def alert_players(self, move: Action):
+    def alert_players(self, action: Action):
         """
         informs all players of a move being made
         
@@ -359,9 +358,9 @@ class Game(ABC):
             * move (Move): the move being made
         """
         for role in self.roles:
-            role.inform_player(move)  
+            role.inform_player(action)  
         
-    def is_legal_move(self, move: Action) -> bool:
+    def is_legal_action(self, action: Action) -> bool:
         """
         checks if the move is in legal_moves
 
@@ -373,7 +372,7 @@ class Game(ABC):
         --------
             bool: True if the move is in legal_moves, False otherwise
         """
-        return move in self.legal_moves
+        return action in self.legal_actions
     
     def next_player(self):
         """
@@ -389,20 +388,20 @@ class Game(ABC):
         self.curr_role_idx = (self.curr_role_idx - 1) % len(self.roles)
         self.curr_role = self.roles[self.curr_role_idx]
         
-    def make_move(self, move: Action):
+    def make_action(self, action: Action):
         """
         shell function to make a move, adds the move to history, calls update_state, and updates curr_player
         """
-        self.history.append(move)
-        self.update_state(move)
+        self.history.append(action)
+        self.update_state(action)
         self.next_player()
     
-    def unmake_move(self):
+    def unmake_action(self):
         """
         shell function to unmake a move, removes the last move from history, calls reverse_state, and updates curr_player
         """
-        move = self.history.pop()
-        self.reverse_state(move)
+        action = self.history.pop()
+        self.reverse_state(action)
         self.prev_player()
     
     def encode(self) -> np.ndarray:
@@ -421,31 +420,24 @@ class Game(ABC):
         return enc.astype(np.float32)
         # TODO: encode curr player
     
-    def win(self):
+    def win(self, role: Role | None = None):
         """
-        turns the game to a win for the current player
+        turns the game to a win for the current player(defualt current player)
         """
         self.state = gameState.ENDED
         self.winner = self.curr_role
-        self.reward = 1
+
+
+
         for role in self.roles:
             if role == self.winner:
                 role.recv_reward(self.reward)
             else:
                 role.recv_reward(-self.reward)
-        
-    def draw(self):
+
+    def lose(self, role: Role | None = None):
         """
-        turns the game to a draw
-        """
-        self.state = gameState.DRAW
-        self.reward = 0
-        for role in self.roles:
-            role.recv_reward(self.reward)
-        
-    def lose(self):
-        """
-        turns the game to a loss for the current player
+        turns the game to a loss for the given player(defualt current player)
         """
         self.state = gameState.ENDED
         self.winner = self.players[self.curr_role_idx - 1]
@@ -455,6 +447,16 @@ class Game(ABC):
                 player.recv_reward(self.reward)
             else:
                 player.recv_reward(-self.reward)
+
+    
+    def draw(self):
+        """
+        turns the game to a draw
+        """
+        self.state = gameState.DRAW
+        self.reward = 0
+        for role in self.roles:
+            role.recv_reward(self.reward)
 
     def map_move(self, move: Action) -> int:
         """
@@ -484,7 +486,7 @@ class Game(ABC):
         memo[id(self)] = result
         
         result.board = deepcopy(self.board, memo)
-        result.legal_moves = deepcopy(self.legal_moves)
+        result.legal_actions = deepcopy(self.legal_actions)
         result.history = deepcopy(self.history)
         result.state = self.state
         result.reward = self.reward
@@ -530,7 +532,7 @@ def play(game: 'Game', players: list['Player']):
         if move is None:
             print("Invalid move")
             return
-        game.make_move(move)
+        game.make_action(move)
         game.alert_players(move)
         
     if game.state == gameState.ENDED:

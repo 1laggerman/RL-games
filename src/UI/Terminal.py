@@ -16,7 +16,7 @@ def play(game: 'Game', players: list['Player']):
         if move is None:
             print("Invalid move")
             return
-        game.make_move(move)
+        game.make_action(move)
         game.alert_players(move)
         
     if game.state == gameState.ENDED:
