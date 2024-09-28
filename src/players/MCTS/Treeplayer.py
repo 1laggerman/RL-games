@@ -1,4 +1,4 @@
-from src.base import Move, Game, gameState, Player
+from src.base import Action, Game, gameState, Player
 
 from typing import Callable
 from dataclasses import dataclass
@@ -46,8 +46,8 @@ class Node(ABC):
     eval: float = 0
     parent: 'Node'
     player: 'Player'
-    children: list[tuple[Move, "Node"]]
-    untried_actions: list[Move]
+    children: list[tuple[Action, "Node"]]
+    untried_actions: list[Action]
     is_terminal: bool = False
     
     def __init__(self, game: Game, parent: "Node" = None) -> None:
@@ -66,7 +66,7 @@ class Node(ABC):
             self.visits = 1
 
     @abstractmethod        
-    def select_child(self) -> tuple[Move, "Node"]:
+    def select_child(self) -> tuple[Action, "Node"]:
         """
         function to be implemented by a child class
         selects the child node to explore/exploit while searching the tree for the best move
@@ -231,7 +231,7 @@ class TreePlayer(Player, ABC):
             if flag_time - start_time > self.search_args.max_time:
                 break
     
-    def update_state(self, move: Move):
+    def update_state(self, move: Action):
         """
         updates the root node after a move is made
         if the child node doesnt exists, it creates it
@@ -246,10 +246,9 @@ class TreePlayer(Player, ABC):
         if not found:
             (move, node) = self.expand(self.game, node, move)
             self.root = node
-        return
     
     @abstractmethod       
-    def best(self) -> tuple[Move, Node]:
+    def best(self) -> tuple[Action, Node]:
         """
         function to be implemented by a child class
         return the best move according to the current evaluation
@@ -260,7 +259,7 @@ class TreePlayer(Player, ABC):
         pass
 
     @abstractmethod
-    def expand(self, state: Game, parent: Node | None = None, move: Move | None = None) -> Node:
+    def expand(self, state: Game, parent: Node | None = None, move: Action | None = None) -> Node:
         # TODO: refactor the change to use Board instead
         """
         function to be implemented by a child class

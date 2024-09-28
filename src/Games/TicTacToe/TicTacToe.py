@@ -1,8 +1,8 @@
-from src.base import Game, Move, gameState, Piece, Role
+from src.base import Game, Action, gameState, Piece, Role
 import os
 import numpy as np
 
-class TicTacToe_move(Move):
+class TicTacToe_move(Action):
     """
     A move for a TicTacToe game.
     
@@ -41,7 +41,7 @@ class TicTacToe_Game(Game):
         self.legal_moves = [TicTacToe_move(f"{i},{j}") for i in range(3) for j in range(3)]
         self.all_moves = self.legal_moves.copy()
     
-    def create_move(self, input: str) -> Move:
+    def create_move(self, input: str) -> Action:
         try:
             return TicTacToe_move(input)
         except:

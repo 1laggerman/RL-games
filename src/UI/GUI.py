@@ -1,5 +1,5 @@
 import pygame
-from src.base import Game, Move, gameState, Piece, Role
+from src.base import Game, Action, gameState, Piece, Role
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600

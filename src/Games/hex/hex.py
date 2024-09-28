@@ -1,11 +1,11 @@
-from src.base import Game, Move, gameState
+from src.base import Game, Action, gameState
 
 import numpy as np
 import itertools as it
 from collections import deque
 from copy import deepcopy
 
-class hex_Move(Move):    
+class hex_Move(Action):    
     location: tuple[int, int]
     changed_links: list[tuple["hex_Move", int]]
     
@@ -39,7 +39,7 @@ class hex_Board(Game):
         self.legal_moves = [hex_Move(f"{i} {j}", loc=(i, j)) for i, j in it.product(range(size), repeat=2)]
         self.linked_to_edge = np.zeros((players.__len__(), 2, size, size), dtype=bool)
         
-    def create_move(self, input: str) -> Move:
+    def create_move(self, input: str) -> Action:
         try:
             move = hex_Move(input, tuple(int(num) for num in input.split(' ')))
             if self.is_legal_move(move):

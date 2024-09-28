@@ -1,7 +1,7 @@
-from src.base import Game, Move, gameState, Piece
+from src.base import Game, Action, gameState, Piece
 import numpy as np
 
-class connect4_Move(Move):    
+class connect4_Move(Action):    
     location: int
     
     def __init__(self, name: str, loc: int) -> None:
@@ -28,7 +28,7 @@ class connect4_Board(Game):
         self.legal_moves = [connect4_Move(f"{i}", loc=i) for i in range(cols)]
         self.cols_heights = [0 for i in range(cols)]
     
-    def create_move(self, input: str) -> Move:
+    def create_move(self, input: str) -> Action:
         try:
             loc = int(input)
             move = connect4_Move(input, loc)

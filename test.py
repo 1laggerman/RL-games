@@ -14,21 +14,21 @@ import os
 
 
 
-game = TicTacToe_Game()
+# game = TicTacToe_Game()
 
-print(game.roles)
-xrole = game.roles[0]
-orole = game.roles[1]
-
-
-print(xrole.pieces)
-print(orole.pieces)
-
-game.make_move(TicTacToe_move('0, 0'))
+# print(game.roles)
+# xrole = game.roles[0]
+# orole = game.roles[1]
 
 
-print(xrole.pieces)
-print(orole.pieces)
+# print(xrole.pieces)
+# print(orole.pieces)
+
+# game.make_move(TicTacToe_move('0, 0'))
+
+
+# print(xrole.pieces)
+# print(orole.pieces)
 
 
 # p1 = MCTS_uct_Tree(board, "X")
@@ -70,69 +70,69 @@ print(orole.pieces)
 
 
 
-# from src.players.MCTS.Models.Alphatest import AlphaZero, TicTacToe, ResNet
-# from src.players.MCTS.Models.ML_architecture.resnet import BaseResnet
-# import matplotlib.pyplot as plt
-# import torch
+from src.players.MCTS.Models.Alphatest import AlphaZero, TicTacToe, ResNet
+from src.players.MCTS.Models.ML_architecture.resnet import BaseResnet
+import matplotlib.pyplot as plt
+import torch
 
-# tictactoe = TicTacToe()
-# # board = TicTacToe_Board((3, 3))
+tictactoe = TicTacToe()
+# board = TicTacToe_Board((3, 3))
 
-# model = ResNet(4, 64)
-# # model = BaseResnet(4, 64)
+model = ResNet(4, 64)
+# model = BaseResnet(4, 64)
 
-# optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-# args = {
-#     'C': 2,
-#     'num_searches': 60,
-#     'num_iterations': 3,
-#     'num_selfPlay_iterations': 500,
-#     'num_epochs': 20,
-#     'batch_size': 64
-# }
+args = {
+    'C': 2,
+    'num_searches': 60,
+    'num_iterations': 3,
+    'num_selfPlay_iterations': 500,
+    'num_epochs': 20,
+    'batch_size': 64
+}
 
-# alphaZero = AlphaZero(model, optimizer, tictactoe, args)
+alphaZero = AlphaZero(model, optimizer, tictactoe, args)
+alphaZero.learn()
 # alphaZero.learn()
-# # alphaZero.learn()
 
-# tictactoe = TicTacToe()
+tictactoe = TicTacToe()
 
-# state = tictactoe.get_initial_state()
-# state = tictactoe.get_next_state(state, 2, -1)
-# state = tictactoe.get_next_state(state, 4, -1)
-# state = tictactoe.get_next_state(state, 6, 1)
-# state = tictactoe.get_next_state(state, 8, 1)
+state = tictactoe.get_initial_state()
+state = tictactoe.get_next_state(state, 2, -1)
+state = tictactoe.get_next_state(state, 4, -1)
+state = tictactoe.get_next_state(state, 6, 1)
+state = tictactoe.get_next_state(state, 8, 1)
 
 
-# encoded_state = tictactoe.get_encoded_state(state)
+encoded_state = tictactoe.get_encoded_state(state)
 
-# tensor_state = torch.tensor(encoded_state).unsqueeze(0)
+tensor_state = torch.tensor(encoded_state).unsqueeze(0)
 
-# # model = ResNet(tictactoe, 4, 64)
-# # model.load_state_dict(torch.load('model_2.pt'))
-# model.eval()
+# model = ResNet(tictactoe, 4, 64)
+# model.load_state_dict(torch.load('model_2.pt'))
+model.eval()
 
-# policy, value = model(tensor_state)
-# value = value.item()
+policy, value = model(tensor_state)
+value = value.item()
 
-# if type(model) == ResNet:
-#     policy = torch.softmax(policy, axis=1).squeeze(0).detach().cpu().numpy()
-# else:
-#     policy = policy.squeeze(0).detach().cpu().numpy()
-# # policy = policy.squeeze(0).detach().cpu().numpy()
-# # policy = torch.softmax(policy, axis=1).squeeze(0).detach().cpu().numpy()
+if type(model) == ResNet:
+    policy = torch.softmax(policy, axis=1).squeeze(0).detach().cpu().numpy()
+else:
+    policy = policy.squeeze(0).detach().cpu().numpy()
+# policy = policy.squeeze(0).detach().cpu().numpy()
+# policy = torch.softmax(policy, axis=1).squeeze(0).detach().cpu().numpy()
 
-# print(policy.shape)
+print(policy.shape)
 
-# print(value)
+print(value)
 
-# print(state)
-# print(tensor_state)
+print(state)
+print(tensor_state)
 
-# plt.bar(range(tictactoe.action_size), policy)
-# # plt.savefig('')
-# plt.show()
+plt.bar(range(tictactoe.action_size), policy)
+# plt.savefig('')
+plt.show()
 
 
 

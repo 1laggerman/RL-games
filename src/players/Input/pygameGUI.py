@@ -21,19 +21,19 @@ class pygamePlayer(Player):
         self.screen.fill((0, 0, 0))
         step = window_len / 3
 
-        pygame.draw.line(screen, (255, 255, 255), (0, step), (window_len, step), 10)
-        pygame.draw.line(screen, (255, 255, 255), (0, step * 2), (window_len, step * 2), 10)
+        pygame.draw.line(self.screen, (255, 255, 255), (0, step), (window_len, step), 10)
+        pygame.draw.line(self.screen, (255, 255, 255), (0, step * 2), (window_len, step * 2), 10)
 
-        pygame.draw.line(screen, (255, 255, 255), (step, 0), (step, window_len), 10)
-        pygame.draw.line(screen, (255, 255, 255), (step * 2, 0), (step * 2, window_len), 10)
+        pygame.draw.line(self.screen, (255, 255, 255), (step, 0), (step, window_len), 10)
+        pygame.draw.line(self.screen, (255, 255, 255), (step * 2, 0), (step * 2, window_len), 10)
         
-        for piece in game.roles[0].pieces:
-            draw_X(screen, piece.location, step)
+        for piece in self.game.roles[0].pieces:
+            draw_X(self.screen, piece.location, step)
 
-        for piece in game.roles[1].pieces:
-            draw_O(screen, piece.location, step)
+        for piece in self.game.roles[1].pieces:
+            draw_O(self.screen, piece.location, step)
 
-        if game.state != gameState.ONGOING:
+        if self.game.state != gameState.ONGOING:
             size = (SCREEN_WIDTH - 100, SCREEN_HEIGHT // 3)
             pos = ((SCREEN_WIDTH - size[0]) // 2, (SCREEN_HEIGHT - size[1]) // 2)
             if game.state == gameState.DRAW:

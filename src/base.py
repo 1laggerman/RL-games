@@ -40,18 +40,21 @@ class Role():
         """
         self.reward += reward
 
-    def inform_player(self, move: 'Move'):
+    def inform_player(self, action: 'Action'):
         """
         wrapper function for update_state that receives the reward and updates the state
 
         Args:
             * move (Move): the move being played
         """
-        if move.reward is not None:
-            self.recv_reward(move.reward)
-        self.player.update_state(move)
+        for role, reward in action.reward:
+            if role == self:
+                self.recv_reward(reward)
+                
+        if self.player is not None:
+            self.player.update_state(action)
 
-    def get_move(self) -> 'Move':
+    def get_move(self) -> 'Action':
         """
         chooses a move to be played using self.board
 
@@ -89,7 +92,7 @@ class Player(ABC):
         self.name = name
 
     @abstractmethod
-    def get_move(self) -> 'Move':
+    def get_move(self) -> 'Action':
         """
         chooses a move to be played using self.board
 
@@ -99,7 +102,7 @@ class Player(ABC):
         pass
     
     @abstractmethod
-    def update_state(self, move: 'Move'):
+    def update_state(self, action: 'Action'):
         """
         inner function to update player's state after a move is played
         
@@ -153,7 +156,17 @@ class Piece(ABC):
         result.location = copy(self.location)
         return result
 
-class Move(ABC):
+class Move:
+    moved_piece: Piece
+    src_location: tuple[int]
+    dest_location: tuple[int]
+    
+    def __init__(self, moved_piece: Piece, to_location: tuple[int]) -> None:
+        self.moved_piece = moved_piece
+        self.src_location = moved_piece.location
+        self.dest_location = to_location
+
+class Action(ABC):
     """
     Abstract move class
     
@@ -166,17 +179,16 @@ class Move(ABC):
         * dest_location: tuple[int]: the square where the piece is moved to
     """
     name: str
-    src_location: tuple[int]
-    dest_location: tuple[int]
-    reward: float = 0
+    affects: list[Move]
+    reward: list[tuple[Role, float]]
     piece: Piece
     
-    def __init__(self, name: str, player: 'Player' = None, reward: float = 0) -> None:
-        super(Move, self).__init__()
+    def __init__(self, name: str, reward: list[tuple[Role, float]] = []) -> None:
+        super(Action, self).__init__()
         self.name = name.replace(" ", "") # clean move name
-        self.reward = reward
+        self.reward = reward.copy()
         
-    def __eq__(self, __value: "Move") -> bool:
+    def __eq__(self, __value: "Action") -> bool:
         return self.name == __value.name
     
     def __str__(self) -> str:
@@ -249,15 +261,15 @@ class Game(ABC):
             reverses the given move\n
     """
     board: np.ndarray[Piece]
-    legal_moves: list[Move]
-    all_moves: list[Move]
+    legal_moves: list[Action]
+    all_moves: list[Action]
     # players: list['Player'] = []
     roles: list[Role] = []
     state: gameState
     winner: 'Role'
     curr_role_idx: int
     curr_role: 'Role'
-    history: list[Move]
+    history: list[Action]
     
     def __init__(self, board_size: tuple, roles: list[Role]) -> None:
         super().__init__()
@@ -274,7 +286,7 @@ class Game(ABC):
             self.curr_role = roles[0]
             
     @abstractmethod
-    def create_move(self, input: str) -> Move:
+    def create_move(self, input: str) -> Action:
         """
         function to be implemented by a child class
         creates a move from input of the specific child class
@@ -290,7 +302,7 @@ class Game(ABC):
         pass        
     
     @abstractmethod
-    def update_state(self, move: Move) -> float:
+    def update_state(self, move: Action) -> float:
         """
         function to be implemented by a child class
         updates self object after a move is made
@@ -314,7 +326,7 @@ class Game(ABC):
         pass
     
     @abstractmethod
-    def reverse_state(self, move: Move):
+    def reverse_state(self, move: Action):
         """
         function to be implemented by a child class
         this function is the reverse of update_state.
@@ -331,7 +343,7 @@ class Game(ABC):
         """
         pass
     
-    def alert_players(self, move: Move):
+    def alert_players(self, move: Action):
         """
         informs all players of a move being made
         
@@ -342,7 +354,7 @@ class Game(ABC):
         for role in self.roles:
             role.inform_player(move)  
         
-    def is_legal_move(self, move: Move) -> bool:
+    def is_legal_move(self, move: Action) -> bool:
         """
         checks if the move is in legal_moves
 
@@ -370,7 +382,7 @@ class Game(ABC):
         self.curr_role_idx = (self.curr_role_idx - 1) % len(self.roles)
         self.curr_role = self.roles[self.curr_role_idx]
         
-    def make_move(self, move: Move):
+    def make_move(self, move: Action):
         """
         shell function to make a move, adds the move to history, calls update_state, and updates curr_player
         """
@@ -437,7 +449,7 @@ class Game(ABC):
             else:
                 player.recv_reward(-self.reward)
 
-    def map_move(self, move: Move) -> int:
+    def map_move(self, move: Action) -> int:
         """
         hash function for moves
 

@@ -1,4 +1,4 @@
-from src.base import Game, Move, gameState, Player, bind
+from src.base import Game, Action, gameState, Player, bind
 
 
 def play(game: 'Game', players: list['Player']):

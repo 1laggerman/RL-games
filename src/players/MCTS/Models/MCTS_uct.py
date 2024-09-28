@@ -1,4 +1,4 @@
-from src.base import Move, Game, gameState, Player
+from src.base import Action, Game, gameState, Player
 from src.players.MCTS.Treeplayer import Node, TreePlayer
 
 import random
@@ -40,7 +40,7 @@ class MCTS_uct_Node(Node):
 
         return best_child
          
-    def expand(self, board: Game, move: Move = None):
+    def expand(self, board: Game, move: Action = None):
         new_action = move
         if move is None or move not in self.untried_actions:
             new_action = self.untried_actions.pop()

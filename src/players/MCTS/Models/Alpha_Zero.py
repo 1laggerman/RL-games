@@ -1,4 +1,4 @@
-from src.base import Move, Game, gameState, Network
+from src.base import Action, Game, gameState, Network
 from src.players.MCTS.Treeplayer import Node, TreePlayer, SArgs
 from src.players.MCTS.Models.ML_architecture.resnet import BaseResnet
 from pathlib import Path
@@ -136,13 +136,13 @@ class Alpha_Zero_player(TreePlayer):
         with torch.no_grad():
             self.net_args.net.apply(init_weights)
         
-    def best(self) -> tuple[Move, Node]:
+    def best(self) -> tuple[Action, Node]:
         if self.root.maximizer:
             return max(self.root.children, key=lambda c: c[1].eval / c[1].visits)
         else:
             return min(self.root.children, key=lambda c: c[1].eval / c[1].visits)
     
-    def expand(self, game: Game, parent: Alpha_Zero_Node | None = None, move: Move | None = None) -> Node:
+    def expand(self, game: Game, parent: Alpha_Zero_Node | None = None, move: Action | None = None) -> Node:
         prob = 0
         maximizer = True
 
