@@ -7,9 +7,9 @@ class TicTacToe_Action(Action):
     def __init__(self, name: str, action_taker: Role) -> None:
         super(TicTacToe_Action, self).__init__(name, action_taker, [])
 
-        locs = name.split(",") # get piece location
-        added_p = Piece(self.name, action_taker) # create a new piece
-        move = Move(added_p, (int(locs[0]), int(locs[1]))) # place the piece on the correct squere
+        loc = name.split(",") # get piece location
+        added_p = Piece(action_taker.name, action_taker) # create a new piece
+        move = Move(added_p, (int(loc[0]), int(loc[1]))) # place the piece on the correct squere
         self.affects.append(move) # add the move to the list of affects
 
         
@@ -37,7 +37,7 @@ class TicTacToe_Game(Game):
     
     def __init__(self) -> None:
         super(TicTacToe_Game, self).__init__((3, 3), [Role('X'), Role('O')])
-        self.legal_moves = [TicTacToe_Action(f"{i},{j}") for i in range(3) for j in range(3)]
+        self.legal_moves = [TicTacToe_Action(f"{i},{j}", self.roles[0]) for i in range(3) for j in range(3)]
         self.all_actions = self.legal_moves.copy()
     
     def create_action(self, input: str) -> Action:

@@ -188,12 +188,11 @@ class Action(ABC):
     name: str
     action_taker: Role
     affects: list[Move]
-    reward: list[tuple[Role, float]]
     
-    def __init__(self, name: str, action_taker: Role, reward: list[tuple[Role, float]] = []) -> None:
+    def __init__(self, name: str, action_taker: Role) -> None:
         super(Action, self).__init__()
         self.name = name.replace(" ", "") # clean move name
-        self.reward = reward.copy()
+        self.action_taker = action_taker
         self.affects = []
         
     def __eq__(self, __value: "Action") -> bool:
@@ -308,7 +307,7 @@ class Game(ABC):
         pass        
     
     @abstractmethod
-    def update_state(self, action: Action) -> float:
+    def update_state(self, action: Action) -> list[tuple[Role, float]]:
         """
         function to be implemented by a child class
         updates self object after a move is made
@@ -393,7 +392,9 @@ class Game(ABC):
         shell function to make a move, adds the move to history, calls update_state, and updates curr_player
         """
         self.history.append(action)
-        self.update_state(action)
+        rewards = self.update_state(action)
+        for role, reward in rewards:
+            role.recv_reward(reward)
         self.next_player()
     
     def unmake_action(self):

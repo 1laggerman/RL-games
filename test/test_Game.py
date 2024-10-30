@@ -10,19 +10,18 @@ class TestTicTacToe(unittest.TestCase):
 
     def test_init(self):
         game = TicTacToe_Game()
+        xRole = Role('X')
+        oRole = Role('O')
 
         self.assertTrue(np.all(game.board == None))
         self.assertEqual(len(game.legal_moves), 9)
 
         moves = []
         for i in range(9):
-            moves.append(TicTacToe_Action(f"{i // 3}, {i % 3}"))
+            moves.append(TicTacToe_Action(f"{i // 3}, {i % 3}", game.curr_role))
             self.assertTrue(moves[i] in game.legal_moves)
 
         self.assertEqual(game.all_actions, moves)
-
-        xRole = Role('X')
-        oRole = Role('O')
         self.assertEqual(game.roles, [xRole, oRole])
         self.assertEqual(game.roles[0].pieces, [])
         self.assertEqual(game.roles[1].pieces, [])
@@ -36,6 +35,8 @@ class TestTicTacToe(unittest.TestCase):
 
     def test_makeMove(self):
         game = TicTacToe_Game()
+        xRole = Role('X')
+        oRole = Role('O')
 
         move = TicTacToe_Action("0,0")
 
@@ -62,6 +63,8 @@ class TestTicTacToe(unittest.TestCase):
 
     def testUnmakeMove(self):
         game = TicTacToe_Game()
+        xRole = Role('X')
+        oRole = Role('O')
 
         move = TicTacToe_Action("0,0")
 
