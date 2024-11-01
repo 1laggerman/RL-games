@@ -14,12 +14,12 @@ class TestTicTacToe(unittest.TestCase):
         oRole = Role('O')
 
         self.assertTrue(np.all(game.board == None))
-        self.assertEqual(len(game.legal_moves), 9)
+        self.assertEqual(len(game.legal_actions), 9)
 
         moves = []
         for i in range(9):
             moves.append(TicTacToe_Action(f"{i // 3}, {i % 3}", game.curr_role))
-            self.assertTrue(moves[i] in game.legal_moves)
+            self.assertTrue(moves[i] in game.legal_actions)
 
         self.assertEqual(game.all_actions, moves)
         self.assertEqual(game.roles, [xRole, oRole])
@@ -38,19 +38,19 @@ class TestTicTacToe(unittest.TestCase):
         xRole = Role('X')
         oRole = Role('O')
 
-        move = TicTacToe_Action("0,0")
+        action = TicTacToe_Action("0,0", xRole)
 
-        game.make_action(move)
+        game.make_action(action)
 
         self.assertFalse(np.all(game.board == None))
         self.assertEqual(game.board[0, 0], Piece('X', game.roles[0], location=(0, 0)))
 
-        self.assertEqual(len(game.legal_moves), 8)
+        self.assertEqual(len(game.legal_actions), 8)
 
         moves = []
         for i in range(1, 9):
-            moves.append(TicTacToe_Action(f"{i % 3},{i // 3}"))
-            self.assertTrue(moves[i - 1] in game.legal_moves)
+            moves.append(TicTacToe_Action(f"{i % 3},{i // 3}", oRole))
+            self.assertTrue(moves[i - 1] in game.legal_actions)
 
         self.assertEqual(game.roles[0].pieces, [Piece('X', game.roles[0], location=(0, 0))])
         self.assertEqual(game.roles[1].pieces, [])
@@ -59,7 +59,7 @@ class TestTicTacToe(unittest.TestCase):
         self.assertEqual(game.winner, None)
         self.assertEqual(game.curr_role_idx, 1)
         self.assertEqual(game.curr_role, Role('O'))
-        self.assertEqual(game.history, [move])
+        self.assertEqual(game.history, [action])
 
     def testUnmakeMove(self):
         game = TicTacToe_Game()
@@ -74,12 +74,12 @@ class TestTicTacToe(unittest.TestCase):
 
         self.assertTrue(np.all(game.board == None))
 
-        self.assertEqual(len(game.legal_moves), 9)
+        self.assertEqual(len(game.legal_actions), 9)
 
         moves = []
         for i in range(9):
             moves.append(TicTacToe_Action(f"{i % 3},{i // 3}"))
-            self.assertTrue(moves[i] in game.legal_moves)
+            self.assertTrue(moves[i] in game.legal_actions)
 
         self.assertEqual(game.roles[0].pieces, [Piece('X', game.roles[0], location=(0, 0))])
         self.assertEqual(game.roles[1].pieces, [])

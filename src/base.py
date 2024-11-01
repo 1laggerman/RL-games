@@ -189,11 +189,11 @@ class Action(ABC):
     action_taker: Role
     affects: list[Move]
     
-    def __init__(self, name: str, action_taker: Role) -> None:
+    def __init__(self, name: str, action_taker: Role, affects: list[Move]) -> None:
         super(Action, self).__init__()
         self.name = name.replace(" ", "") # clean move name
         self.action_taker = action_taker
-        self.affects = []
+        self.affects = affects
         
     def __eq__(self, __value: "Action") -> bool:
         return self.name == __value.name
@@ -428,13 +428,22 @@ class Game(ABC):
         self.state = gameState.ENDED
         self.winner = self.curr_role
 
-
+        rewards = []
 
         for role in self.roles:
             if role == self.winner:
-                role.recv_reward(self.reward)
+                rewards.append((role, 1))
             else:
-                role.recv_reward(-self.reward)
+                rewards.append((role, -1))
+
+        return rewards
+
+
+        # for role in self.roles:
+        #     if role == self.winner:
+        #         role.recv_reward(self.reward)
+        #     else:
+        #         role.recv_reward(-self.reward)
 
     def lose(self, role: Role | None = None):
         """
@@ -458,6 +467,10 @@ class Game(ABC):
         self.reward = 0
         for role in self.roles:
             role.recv_reward(self.reward)
+
+        rewards = []
+
+        return rewards
 
     def map_move(self, move: Action) -> int:
         """
