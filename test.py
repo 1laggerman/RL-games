@@ -14,7 +14,7 @@ import os
 
 
 
-# game = TicTacToe_Game()
+game = TicTacToe_Game()
 
 # print(game.roles)
 # xrole = game.roles[0]

@@ -5,12 +5,14 @@ import numpy as np
 class TicTacToe_Action(Action):
         
     def __init__(self, name: str, action_taker: Role) -> None:
-        super(TicTacToe_Action, self).__init__(name, action_taker, [])
 
-        locs = name.split(",") # get piece location
-        added_p = Piece(self.name, action_taker) # create a new piece
-        move = Move(added_p, (int(locs[0]), int(locs[1]))) # place the piece on the correct squere
-        self.affects.append(move) # add the move to the list of affects
+        affects = []
+        loc = name.split(",") # get piece location
+        added_p = Piece(action_taker.name, action_taker) # create a new piece
+        move = Move(added_p, (int(loc[0]), int(loc[1]))) # place the piece on the correct squere
+        affects.append(move) # add the move to the list of affects
+
+        super(TicTacToe_Action, self).__init__(name, action_taker, affects)
 
         
     def __eq__(self, __value: 'TicTacToe_Action') -> bool:
@@ -33,12 +35,12 @@ class TicTacToe_Game(Game):
         __str__(): Returns a string representation of the board state to draw the board in the terminal.
     """
     
-    legal_moves: list[TicTacToe_Action]
+    legal_actions: list[TicTacToe_Action]
     
     def __init__(self) -> None:
         super(TicTacToe_Game, self).__init__((3, 3), [Role('X'), Role('O')])
-        self.legal_moves = [TicTacToe_Action(f"{i},{j}") for i in range(3) for j in range(3)]
-        self.all_actions = self.legal_moves.copy()
+        self.legal_actions = [TicTacToe_Action(f"{i},{j}", self.roles[0]) for i in range(3) for j in range(3)]
+        self.all_actions = self.legal_actions.copy()
     
     def create_action(self, input: str) -> Action:
         try:
@@ -49,17 +51,21 @@ class TicTacToe_Game(Game):
     
     def update_state(self, last_action: TicTacToe_Action):
 
-        move = last_action.affects[0]
+        action = last_action.affects[0]
 
-        x = move.dest_location[0]
-        y = move.dest_location[1]
+        x = action.dest_location[0]
+        y = action.dest_location[1]
         
-        p = Piece(self.curr_role.name, self.curr_role, location=last_action.dest_location)
+        p = Piece(self.curr_role.name, self.curr_role, location=action.dest_location)
 
         self.curr_role.pieces.append(p)
-        self.board[move.dest_location] = p
+        self.board[action.dest_location] = p
 
         self.legal_actions.remove(last_action)
+        self.next_player()
+        for action in self.legal_actions:
+            action.action_taker = self.curr_role
+        self.prev_player()
 
         directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
 
@@ -74,7 +80,7 @@ class TicTacToe_Game(Game):
                 
             i = 0
             test_loc = (loc[0], loc[1])
-            move = TicTacToe_Action(f"{loc[0]},{loc[1]}")
+            # action = TicTacToe_Action(f"{loc[0]},{loc[1]}", self.curr_role)
             while test_loc[0] >= 0 and test_loc[0] < self.board.shape[0] and test_loc[1] >= 0 and test_loc[1] < self.board.shape[1]:
                 location: Piece = self.board[loc[0] + i * dx, loc[1] + i * dy]
                 if location is None or location.name != self.curr_role.name:
@@ -83,11 +89,12 @@ class TicTacToe_Game(Game):
                 test_loc = (loc[0] + i * dx, loc[1] + i * dy)
 
             if i == 3: # 3 in a row
-                self.win()
-                return
+                return self.win()
         
         if len(self.legal_actions) == 0:
-            self.draw()
+            return self.draw()
+        
+        return []
             
     def reverse_state(self, action: TicTacToe_Action):
         self.board[action.affects[0].dest_location] = None

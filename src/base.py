@@ -188,13 +188,12 @@ class Action(ABC):
     name: str
     action_taker: Role
     affects: list[Move]
-    reward: list[tuple[Role, float]]
     
-    def __init__(self, name: str, action_taker: Role, reward: list[tuple[Role, float]] = []) -> None:
+    def __init__(self, name: str, action_taker: Role, affects: list[Move]) -> None:
         super(Action, self).__init__()
         self.name = name.replace(" ", "") # clean move name
-        self.reward = reward.copy()
-        self.affects = []
+        self.action_taker = action_taker
+        self.affects = affects
         
     def __eq__(self, __value: "Action") -> bool:
         return self.name == __value.name
@@ -308,7 +307,7 @@ class Game(ABC):
         pass        
     
     @abstractmethod
-    def update_state(self, action: Action) -> float:
+    def update_state(self, action: Action) -> list[tuple[Role, float]]:
         """
         function to be implemented by a child class
         updates self object after a move is made
@@ -393,7 +392,9 @@ class Game(ABC):
         shell function to make a move, adds the move to history, calls update_state, and updates curr_player
         """
         self.history.append(action)
-        self.update_state(action)
+        rewards = self.update_state(action)
+        for role, reward in rewards:
+            role.recv_reward(reward)
         self.next_player()
     
     def unmake_action(self):
@@ -427,13 +428,22 @@ class Game(ABC):
         self.state = gameState.ENDED
         self.winner = self.curr_role
 
-
+        rewards = []
 
         for role in self.roles:
             if role == self.winner:
-                role.recv_reward(self.reward)
+                rewards.append((role, 1))
             else:
-                role.recv_reward(-self.reward)
+                rewards.append((role, -1))
+
+        return rewards
+
+
+        # for role in self.roles:
+        #     if role == self.winner:
+        #         role.recv_reward(self.reward)
+        #     else:
+        #         role.recv_reward(-self.reward)
 
     def lose(self, role: Role | None = None):
         """
@@ -457,6 +467,10 @@ class Game(ABC):
         self.reward = 0
         for role in self.roles:
             role.recv_reward(self.reward)
+
+        rewards = []
+
+        return rewards
 
     def map_move(self, move: Action) -> int:
         """
