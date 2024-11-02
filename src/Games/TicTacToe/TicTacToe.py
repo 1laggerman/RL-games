@@ -99,11 +99,12 @@ class TicTacToe_Game(Game):
     def reverse_state(self, action: TicTacToe_Action):
         self.board[action.affects[0].dest_location] = None
         self.legal_actions.append(action)
+        self.prev_player()
+        for action in self.legal_actions:
+            action.action_taker = self.curr_role
+        self.next_player()
         self.state = gameState.ONGOING
         self.winner = None
-        self.reward = 0
-        for role in self.roles:
-            role.reward = 0
         
     def __str__(self):
         board_str = ''

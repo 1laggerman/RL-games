@@ -275,7 +275,7 @@ class Game(ABC):
     winner: 'Role'
     curr_role_idx: int
     curr_role: 'Role'
-    history: list[Action]
+    history: list[tuple[Action, list[tuple[Role, float]]]]
     
     def __init__(self, board_size: tuple, roles: list[Role]) -> None:
         super().__init__()
@@ -391,8 +391,8 @@ class Game(ABC):
         """
         shell function to make a move, adds the move to history, calls update_state, and updates curr_player
         """
-        self.history.append(action)
         rewards = self.update_state(action)
+        self.history.append((action, rewards))
         for role, reward in rewards:
             role.recv_reward(reward)
         self.next_player()
@@ -401,8 +401,10 @@ class Game(ABC):
         """
         shell function to unmake a move, removes the last move from history, calls reverse_state, and updates curr_player
         """
-        action = self.history.pop()
+        action, rewards = self.history.pop()
         self.reverse_state(action)
+        for role, reward in rewards:
+            role.recv_reward(-reward)
         self.prev_player()
     
     def encode(self) -> np.ndarray:
