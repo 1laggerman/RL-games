@@ -174,25 +174,12 @@ class Move:
         self.dest_location = to_location
 
 class Action(ABC):
-    """
-    Abstract move class
-    
-    Attributes:
-    -----------
-        * name (str): String representation of the move
-        * reward (float): optional reward for the move(if known). 0 by default.
-        * player (player): optional player that made the move. None by default. (usualy not needed as board holds curr_player)
-        * src_location: tuple[int]: the square where the piece is moved from
-        * dest_location: tuple[int]: the square where the piece is moved to
-    """
     name: str
-    action_taker: Role
     affects: list[Move]
     
-    def __init__(self, name: str, action_taker: Role, affects: list[Move]) -> None:
+    def __init__(self, name: str, affects: list[Move]) -> None:
         super(Action, self).__init__()
         self.name = name.replace(" ", "") # clean move name
-        self.action_taker = action_taker
         self.affects = affects
         
     def __eq__(self, __value: "Action") -> bool:
@@ -205,68 +192,6 @@ class Action(ABC):
         return str(self)
 
 class Game(ABC):
-    """
-    Abstract Game class
-    
-    Attributes:
-    -----------
-        * board (np.ndarray[Piece]): holds visualization of the board - init to None pieces\n
-        * legal_moves (list[Move]): the legal moves for the current player with respect to the board - requires initialization\n
-        * players (list[player]): the players playing the game - provided by the user\n
-        * state (gameState): the current state of the game - init to ONGOING\n
-        * reward (float): the total reward of the game so far - init to 0\n
-        * winner (player): the winner of the game - init to None\n
-        * curr_player_idx (int): the index of the current player in self.players - init to 0\n
-        * curr_player (player): the current player - init to players[0]\n
-        * history (list[Move]): the history of moves played - init to []\n
-        
-    Methods provided:
-    -----------------
-    
-        * is_legal_move(self, move: Move) -> bool:\n
-            checks if the move is in legal_moves\n
-            you may want to override __eq__ for Move for more accurate performance\n
-    
-        * alert_players(self, move: Move) -> None\n
-            informs the players of the move\n
-            
-        * make_move(self, move: Move) -> None:\n
-            adds the move to history, calls update_state, and updates curr_player\n
-            
-        * unmake_move(self) -> None:\n
-            removes the last move from history, calls reverse_state, and updates curr_player\n   
-        
-        * next_player(self) -> None:\n
-            updates curr_player_idx(+1 mod len(players)) and curr_player\n
-            
-        * prev_player(self) -> None:\n
-            updates curr_player_idx(+1 mod len(players)) and curr_player\n
-
-        * encode(self) -> np.ndarray:\n
-            encodes the board into a numpy array for ML usage.\n
-            defualt encodes by layer for each pieace and a legal_moves layer\n
-            
-        * win(self, player: player) -> None:\n
-            updates the state of the game to ENDED and sets the winner to player and reward 1\n
-            
-        * lose(self, player: player) -> None:\n
-            updates the state of the game to ENDED and sets the winner to other player and reward -1\n
-            
-        * draw(self) -> None:\n
-            updates the state of the game to ENDED and sets the winner to None and reward 0\n
-            
-    Method to override:
-    -------------------
-    
-        * create_move(self, move: Move) -> None:\n
-            makes a move on the board and updates the state of the game accordingly\n
-            
-        * update_state(self, move: Move) -> None:\n
-            updates the state of the game based on the current board\n
-            
-        * reverse_state(self, move: Move) -> None:\n
-            reverses the given move\n
-    """
     board: np.ndarray[Piece]
     legal_actions: list[Action]
     all_actions: list[Action]
@@ -440,26 +365,6 @@ class Game(ABC):
 
         return rewards
 
-
-        # for role in self.roles:
-        #     if role == self.winner:
-        #         role.recv_reward(self.reward)
-        #     else:
-        #         role.recv_reward(-self.reward)
-
-    def lose(self, role: Role | None = None):
-        """
-        turns the game to a loss for the given player(defualt current player)
-        """
-        self.state = gameState.ENDED
-        self.winner = self.players[self.curr_role_idx - 1]
-        self.reward = -1
-        for player in self.players:
-            if player == self.winner:
-                player.recv_reward(self.reward)
-            else:
-                player.recv_reward(-self.reward)
-
     
     def draw(self):
         """
@@ -474,7 +379,7 @@ class Game(ABC):
 
         return rewards
 
-    def map_move(self, move: Action) -> int:
+    def map_move(self, action: Action) -> int:
         """
         hash function for moves
 
@@ -484,9 +389,9 @@ class Game(ABC):
 
         Returns:
         --------
-            mapping of each move according to the unravled index of the destination square of the move
+            int: the index of the action inside self.all_actions
         """
-        return np.ravel_multi_index(move.dest_location, self.board.shape)
+        return self.all_actions.index(action)
     
     def __str__(self):
         return str(self.board)
@@ -508,12 +413,12 @@ class Game(ABC):
         result.reward = self.reward
         result.roles = self.roles
         result.curr_role = self.curr_role
-        result.players = self.players
+        result.roles = self.roles
         result.winner = self.winner
         
         return result
     
-def bind(game: 'Game', players: list['Player']):
+def bind_all(game: 'Game', players: list['Player']):
     """
     binds game and players to each other
     couses each side to hold a reference to the other
@@ -527,11 +432,18 @@ def bind(game: 'Game', players: list['Player']):
         print("No players")
         return
     
-    game.players = players
-    game.curr_role = players[game.curr_role_idx]
+    for i in range(len(game.roles)):
+        game.roles[i].player = players[i]
+        players[i].game = game
     
-    for player in players:
-        player.game = game
+def bind(game: 'Game', player: 'Player', role: Role):
+    """
+    binds game and player to each other
+    couses the player to hold a reference to the game)
+    """
+    player.game = game
+    role.player = player
+
 
 def play(game: 'Game', players: list['Player']):
     """

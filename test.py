@@ -11,10 +11,14 @@ import numpy as np
 from typing import Any
 import torch
 import os
+import math
 
+board_shape = (3, 3)
+none_val = math.prod(board_shape)
 
+# game = TicTacToe_Game()
 
-game = TicTacToe_Game()
+# game.create_action("4, 5")
 
 # print(game.roles)
 # xrole = game.roles[0]

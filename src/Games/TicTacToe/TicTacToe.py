@@ -9,15 +9,16 @@ class TicTacToe_Action(Action):
         affects = []
         loc = name.split(",") # get piece location
         added_p = Piece(action_taker.name, action_taker) # create a new piece
+        
         move = Move(added_p, (int(loc[0]), int(loc[1]))) # place the piece on the correct squere
         affects.append(move) # add the move to the list of affects
 
-        super(TicTacToe_Action, self).__init__(name, action_taker, affects)
+        super(TicTacToe_Action, self).__init__(name, affects)
 
         
     def __eq__(self, __value: 'TicTacToe_Action') -> bool:
         if isinstance(__value, TicTacToe_Action):
-            return self.name == __value.name and self.action_taker == __value.action_taker
+            return self.name == __value.name
         return False
         
 
@@ -43,29 +44,24 @@ class TicTacToe_Game(Game):
         self.all_actions = self.legal_actions.copy()
     
     def create_action(self, input: str) -> Action:
-        try:
-            action = TicTacToe_Action(input)
-        except:
-            pass
-        return None
+        action = TicTacToe_Action(input, self.curr_role)
+        if action not in self.legal_actions:
+            raise ValueError("Illegal action")
+        return action
     
     def update_state(self, last_action: TicTacToe_Action):
 
-        action = last_action.affects[0]
+        move = last_action.affects[0]
 
-        x = action.dest_location[0]
-        y = action.dest_location[1]
+        x = move.dest_location[0]
+        y = move.dest_location[1]
         
-        p = Piece(self.curr_role.name, self.curr_role, location=action.dest_location)
+        p = move.moved_piece
 
         self.curr_role.pieces.append(p)
-        self.board[action.dest_location] = p
+        self.board[(x, y)] = p
 
         self.legal_actions.remove(last_action)
-        self.next_player()
-        for action in self.legal_actions:
-            action.action_taker = self.curr_role
-        self.prev_player()
 
         directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
 
@@ -80,7 +76,7 @@ class TicTacToe_Game(Game):
                 
             i = 0
             test_loc = (loc[0], loc[1])
-            # action = TicTacToe_Action(f"{loc[0]},{loc[1]}", self.curr_role)
+
             while test_loc[0] >= 0 and test_loc[0] < self.board.shape[0] and test_loc[1] >= 0 and test_loc[1] < self.board.shape[1]:
                 location: Piece = self.board[loc[0] + i * dx, loc[1] + i * dy]
                 if location is None or location.name != self.curr_role.name:

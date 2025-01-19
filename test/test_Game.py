@@ -39,9 +39,9 @@ class TestTicTacToe(unittest.TestCase):
         xRole = Role('X')
         oRole = Role('O')
 
-        move = TicTacToe_Action("0,0", xRole)
+        action = game.create_action("0, 0")
 
-        game.make_action(move)
+        game.make_action(action)
 
         self.assertFalse(np.all(game.board == None))
         self.assertEqual(game.board[0, 0], Piece('X', game.roles[0], location=(0, 0)))
@@ -60,16 +60,16 @@ class TestTicTacToe(unittest.TestCase):
         self.assertEqual(game.winner, None)
         self.assertEqual(game.curr_role_idx, 1)
         self.assertEqual(game.curr_role, Role('O'))
-        self.assertEqual(game.history, [move])
+        self.assertEqual(game.history, [(action, [])])
 
     def testUnmakeMove(self):
         game = TicTacToe_Game()
         xRole = Role('X')
         oRole = Role('O')
 
-        move = TicTacToe_Action("0,0", xRole)
+        action = TicTacToe_Action("0,0", xRole)
 
-        game.make_action(move)
+        game.make_action(action)
 
         game.unmake_action()
 
