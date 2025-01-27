@@ -2,7 +2,7 @@ from src.Games.TicTacToe.TicTacToe import TicTacToe_Game, TicTacToe_Action
 from src.players.Input.terminalInput import terminalPlayer as humanPlayer
 from src.players.MCTS.Models.MCTS_uct import MCTS_uct_Tree
 from src.players.MCTS.Models.Alpha_Zero import Alpha_Zero_player, AZ_search_args, AZ_NArgs, AZ_train_args
-from src.players.MCTS.Models.ML_architecture.resnet import BaseResnet
+from src.players.MCTS.Models.networks.resnet import BaseResnet
 from src.players.MCTS.Treeplayer import SArgs
 from src.base import play, bind, Piece
 import time
@@ -75,7 +75,7 @@ none_val = math.prod(board_shape)
 
 
 from src.players.MCTS.Models.Alphatest import AlphaZero, TicTacToe, ResNet
-from src.players.MCTS.Models.ML_architecture.resnet import BaseResnet
+from src.players.MCTS.Models.networks.resnet import BaseResnet
 import matplotlib.pyplot as plt
 import torch
 
