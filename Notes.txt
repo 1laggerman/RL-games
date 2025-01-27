@@ -1,17 +1,30 @@
 Notice:
-    - replaced policy and value in net eval return for testing. remember to switch back
+    - replaced policy and value position in net eval return for testing. remember to switch back
 
-Issues:
+Issues found:
     - dont use softmax to train policy
     - use model.train() from torch to put batchnorm into affect
-    - train batch/more epochs
     - create nodes without evaluating
-    - 
 
-ideas:    
+ideas:
+    - add "fit" method to train model on user data to create a mimicking model.
+        - policy labels: user chosen action in the game
+        - value labels: winner of game / user. when testing user method apply different head?
+    - alpha-beta pruning: account for net errors:
+        - add head to net that decides how many moves to look ahead?
+        - how to train this head?
+
+
+TODO:
+    - write extensive tests
     - revert to net output relative to curr player and not static(or allow both)
+    - use model.train() to put batchnorm into affect
+    - dont use softmax on policy in train loop
+    - use weakref to mitigate circular refrences (https://medium.com/@AlexanderObregon/how-pythons-memory-management-works-f832405ea3a3)
+    - design GUI/input framework using strategy(?) design pattern
+    - write c++ equivalent for base classes for faster runtime
+    - write c++ binding and import for python classes (https://realpython.com/python-bindings-overview/)
 
-Add:
-    - Tests
-    - GUI (pygame)
-    - move reward attached to Role
+TO-THINK:
+    - how to apply alpha-sample model?
+    - how to create consecutive model for non turn based games?
